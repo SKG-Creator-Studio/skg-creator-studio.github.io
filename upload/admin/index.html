@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>SKG Developer Editor</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    /* =========================================================
+       DEVELOPER EDITOR
+       Opens index.html, lets you edit it visually and saves it
+       straight back into the website folder. No server needed:
+       double-click dev.html (Chrome or Edge) and pick the folder.
+       ========================================================= */
+    :root {
+      --bg: #0f0f12; --panel: #17171c; --line: #2a2a33; --text: #ececf1;
+      --muted: #9a9aa8; --red: #e3122b; --green: #25d366; --amber: #f5a524;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+      font: 14px/1.45 Inter, system-ui, Segoe UI, sans-serif; }
+    .app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: 52px 1fr; height: 100vh; }
+    header { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+      background: var(--panel); border-bottom: 1px solid var(--line); }
+    header h1 { font-size: 15px; margin: 0 10px 0 0; letter-spacing: .5px; }
+    header h1 span { color: var(--red); }
+    .spacer { flex: 1; }
+    .status { color: var(--muted); font-size: 13px; }
+    .status.dirty { color: var(--amber); }
+    .status.ok { color: var(--green); }
+    .status.err { color: #ff6b7a; }
+    button, .btn { font: inherit; border: 1px solid var(--line); background: #22222a; color: var(--text);
+      padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+    button:hover { border-color: #444; }
+    button.primary { background: var(--red); border-color: var(--red); font-weight: 600; }
+    button:disabled { opacity: .5; cursor: default; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .seg button { border: 0; border-radius: 0; background: transparent; }
+    .seg button.on { background: #2f2f39; }
+    .stage { position: relative; background: #000; overflow: hidden; }
+    .stage iframe { width: 100%; height: 100%; border: 0; background: #000; display: block; margin: 0 auto; }
+    .stage.mobile iframe { width: 390px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+    aside { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 14px; }
+    aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 18px 0 8px; }
+    aside h2:first-child { margin-top: 0; }
+    .card { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #131317; }
+    .hint { color: var(--muted); font-size: 13px; margin: 0; }
+    .tag { display: inline-block; font: 12px ui-monospace, Consolas, monospace; background: #26262e;
+      padding: 2px 6px; border-radius: 5px; color: #ffb3bc; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+    input[type=text], textarea { width: 100%; font: inherit; color: var(--text); background: #0d0d10;
+      border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; }
+    textarea { min-height: 70px; resize: vertical; }
+    select { font: inherit; color: var(--text); background: #0d0d10; border: 1px solid var(--line);
+      border-radius: 7px; padding: 7px 8px; flex: 1; min-width: 0; }
+    input[type=range] { width: 100%; accent-color: var(--red); }
+    button.danger { border-color: #5a1a22; color: #ff8e9b; }
+    button.small { padding: 4px 9px; font-size: 13px; }
+    .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .soc { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .soc svg { width: 18px; height: 18px; fill: #eee; }
+    .prj { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; background: #101014; }
+    .prj.open { border-color: #444; }
+    .prj-top { display: flex; align-items: center; gap: 6px; padding: 6px; }
+    .prj-th { width: 44px; height: 28px; flex: none; border-radius: 4px; overflow: hidden; background: #222;
+      display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+    .prj-th img, .prj-th video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .prj-name { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 4px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; }
+    .prj .star { color: #555; }
+    .prj .star.on { color: #f5a524; border-color: #6b4a10; }
+    .prj-form { padding: 0 10px 12px; }
+    .soc .name { font-size: 12px; color: var(--muted); grid-column: 2 / 3; margin-bottom: -6px; }
+    .soc input { grid-column: 2 / 3; }
+    input:focus, textarea:focus { outline: none; border-color: #555; }
+    .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .thumb { margin-top: 8px; max-width: 100%; max-height: 120px; border-radius: 6px; background: #222; }
+    ul.help { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+    ul.help li { margin: 3px 0; }
+    .welcome { position: absolute; inset: 0; display: grid; place-items: center; background: var(--bg); padding: 24px; text-align: center; }
+    .welcome[hidden] { display: none; }
+    .welcome h2 { margin: 0 0 8px; font-size: 20px; }
+    .welcome p { color: var(--muted); max-width: 440px; margin: 0 auto 18px; }
+    .welcome code { color: var(--text); }
+    .err-box { padding: 30px; color: #ffb3bc; }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto 60vh auto; height: auto; min-height: 100vh; }
+      header { flex-wrap: wrap; padding: 8px 12px; }
+      header h1 { width: 100%; }
+      .spacer { display: none; }
+      aside { border-left: 0; border-top: 1px solid var(--line); }
+      .stage.mobile iframe { width: 100%; }
+    }
+    .err-box code { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>SKG <span>Developer</span></h1>
+      <div class="seg" id="pageSeg" title="Which page to edit">
+        <button data-page="index.html" class="on">Home page</button>
+        <button data-page="projects.html">All projects page</button>
+      </div>
+      <div class="seg" id="modeSeg">
+        <button data-mode="edit" class="on">Edit</button>
+        <button data-mode="preview">Preview</button>
+      </div>
+      <div class="seg" id="sizeSeg">
+        <button data-size="desktop" class="on">Desktop</button>
+        <button data-size="mobile">Mobile</button>
+      </div>
+      <span class="status" id="status">Loading...</span>
+      <div class="spacer"></div>
+      <button id="undoBtn" title="Throw away unsaved changes">Discard changes</button>
+      <button id="folderBtn" title="Choose the website folder">Open folder</button>
+      <a class="btn" id="openPage" href="index.html" target="_blank" rel="noopener">Open page</a>
+      <button class="primary" id="saveBtn" disabled>Save</button>
+    </header>
+
+    <div class="stage" id="stage">
+      <iframe id="frame" title="Website being edited"></iframe>
+      <div class="welcome" id="welcome">
+        <div>
+          <h2 id="welcomeTitle">Open your website folder</h2>
+          <p id="welcomeText">Click the button and choose the folder that has <code>index.html</code> in it
+            (the one this dev.html is in). Chrome or Edge will ask to let this page edit files there - click Allow.</p>
+          <button class="primary" id="welcomeBtn">Open website folder</button>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <h2>Selected element</h2>
+      <div class="card" id="inspector">
+        <p class="hint">Click anything on the page. Text can be typed straight into the page.</p>
+      </div>
+
+      <h2>Projects</h2>
+      <div class="card">
+        <div id="projList"></div>
+        <div class="row">
+          <button id="projAdd">+ Add project</button>
+        </div>
+        <p class="hint" style="margin-top:10px"><b style="color:#f5a524">&#9733;</b> = shown on the home page (the first 4).
+          Every project shows on the "View all projects" page. Click a project's name to edit it.</p>
+      </div>
+
+      <div id="socialSec">
+      <h2>Social media</h2>
+      <div class="card">
+        <div id="socialList"></div>
+        <div class="row">
+          <select id="socialAdd"></select>
+          <button id="socialAddBtn">+ Add</button>
+        </div>
+        <p class="hint" style="margin-top:10px">Shown as icons at the top of the page and in the footer.
+          Leave a link empty to keep it as <span class="tag">#</span>.</p>
+      </div>
+      </div>
+
+      <div id="contactSec">
+      <h2>Contact settings</h2>
+      <div class="card">
+        <label for="s_OWNER_EMAIL">Email (form messages and mailto links)</label>
+        <input type="text" id="s_OWNER_EMAIL">
+        <label for="s_OWNER_WHATSAPP">WhatsApp number (with country code)</label>
+        <input type="text" id="s_OWNER_WHATSAPP" placeholder="+94752993332">
+        <label for="s_CALLMEBOT_APIKEY">CallMeBot API key</label>
+        <input type="text" id="s_CALLMEBOT_APIKEY" placeholder="empty = off">
+        <label for="s_DISCORD_WEBHOOK_URL">Discord webhook URL</label>
+        <input type="text" id="s_DISCORD_WEBHOOK_URL" placeholder="empty = off">
+        <label for="s_DISCORD_USER_ID">Discord user ID to ping</label>
+        <input type="text" id="s_DISCORD_USER_ID">
+        <p class="hint" style="margin-top:10px">Changing the email or WhatsApp number also updates every
+          <span class="tag">mailto:</span> / <span class="tag">wa.me</span> link. Numbers written as text
+          (like "075 299 3332") you edit on the page.</p>
+      </div>
+      </div>
+
+      <h2>How to use</h2>
+      <ul class="help">
+        <li>Pick <b>Home page</b> or <b>All projects page</b> at the top to choose which page you edit.</li>
+        <li><b>Edit</b> mode: click text and type. Click links, images, numbers and form boxes to change them here.</li>
+        <li>Click a skill bar to move its % with the slider. Click a project card to edit it in <b>Projects</b>.</li>
+        <li><b>Bigger</b> selects the box around the thing you clicked (a whole card or section) so you can
+          <b>Copy</b>, <b>Move</b> or <b>Delete</b> it.</li>
+        <li><b>Preview</b> mode: the page works normally (menus, sliders).</li>
+        <li><b>Save</b> writes the page you are editing (and projects.js). The old version is kept in the <span class="tag">backups</span> folder.</li>
+        <li>New images go to the <span class="tag">uploads</span> folder.</li>
+      </ul>
+    </aside>
+  </div>
+
+  <script>
+  (function () {
+    const SETTINGS = ['OWNER_EMAIL', 'OWNER_WHATSAPP', 'CALLMEBOT_APIKEY', 'DISCORD_WEBHOOK_URL', 'DISCORD_USER_ID'];
+    // Text-holding tags that can be typed into directly.
+    const TEXT_TAGS = new Set(['H1','H2','H3','H4','H5','H6','P','SPAN','A','LI','B','SMALL','STRONG','EM','DIV','LABEL','BUTTON','I']);
+    // Elements whose text is filled in by the site's own scripts - edited through their attributes instead.
+    const SCRIPT_FILLED = '.count, #yr, #formNote, #msg, #tDots, .bar .p';
+    // Icons offered in the social media list (24x24, drawn with fill like the site's own icons).
+    const SOCIAL_ICONS = {
+      'Facebook':  '<path d="M14 8h3V4h-3c-2.8 0-5 2.2-5 5v2H7v4h2v7h4v-7h3l1-4h-4V9c0-.6.4-1 1-1z"/>',
+      'Instagram': '<path fill-rule="evenodd" d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm5.5-4a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>',
+      'TikTok':    '<path d="M16.6 2h-3.4v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V9.1a6.4 6.4 0 1 0 5.4 6.3V8.6a8 8 0 0 0 4.4 1.4V6.6a4.6 4.6 0 0 1-4.4-4.6z"/>',
+      'YouTube':   '<path fill-rule="evenodd" d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12a31 31 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8zM9.8 15.1V8.9l5.4 3.1z"/>',
+      'WhatsApp':  '<path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"/>',
+      'X':         '<path d="M17.8 3h3.1l-6.8 7.7 8 10.3h-6.2l-4.9-6.3L5.4 21H2.3l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/>',
+      'LinkedIn':  '<path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.5h4V21H3zM9.5 9.5h3.8v1.6h.06c.53-1 1.83-2.06 3.77-2.06 4.03 0 4.77 2.65 4.77 6.1V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.7V21h-4z"/>',
+      'GitHub':    '<path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/>',
+      'Twitter':   '<path d="M22 5.8c-.7.3-1.5.5-2.4.6.9-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4.1 4.1 0 0 0-7 3.7A11.6 11.6 0 0 1 3.4 4.6a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5 0 2 1.4 3.7 3.3 4.1-.6.2-1.2.2-1.9.1.5 1.6 2 2.8 3.8 2.9A8.3 8.3 0 0 1 2 18.4 11.7 11.7 0 0 0 8.3 20c7.5 0 11.7-6.2 11.7-11.7v-.5c.8-.6 1.5-1.3 2-2z"/>'
+    };
+    // Attributes offered in the inspector, in display order.
+    const ATTRS = [
+      ['href', 'Link (href)'], ['src', 'Image file (src)'], ['alt', 'Image description (alt)'],
+      ['data-to', 'Counter target number'], ['data-w', 'Bar width (%)'],
+      ['placeholder', 'Placeholder text'], ['aria-label', 'Label (aria-label)']
+    ];
+
+    const frame = document.getElementById('frame');
+    const statusEl = document.getElementById('status');
+    const saveBtn = document.getElementById('saveBtn');
+    const inspector = document.getElementById('inspector');
+
+    let page = 'index.html';    // page being edited (index.html or projects.html)
+    let srcDoc = null;          // parsed page - the copy that gets saved
+    let settings = {};          // contact settings currently in index.html
+    let dirtyText = new Set();  // data-eid of elements whose text was typed into
+    let dirty = false;
+    let mode = 'edit';
+    let selected = null;        // element inside the iframe
+    let pendingStatus = null;   // shown once the reloaded page is ready
+    let nextEid = 0;            // next free data-eid for copied elements
+    let socials = [];           // [{ name, href, icon }] shown in every .socials row
+    let socialsChanged = false;
+    let projects = [];          // contents of projects.js
+    let projectsDirty = false;
+    let openProj = -1;          // project open for editing in the panel
+
+    function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = 'status' + (cls ? ' ' + cls : ''); }
+    function markDirty() { dirty = true; saveBtn.disabled = false; setStatus('Unsaved changes', 'dirty'); }
+    function src(eid) { return srcDoc.querySelector('[data-eid="' + eid + '"]'); }
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+    // ---------------- where the site lives ----------------
+    // Online (this page served as /admin/ on the hosting): reads the live files and saves
+    // through admin/api.php after a password login.
+    // On the PC (dev.html opened from the folder): the browser's File System Access API
+    // reads and writes the folder directly (Chrome / Edge); the chosen folder is remembered
+    // in IndexedDB so next time it is one click to allow again.
+    // On GitHub Pages (*.github.io/.../admin/) it saves into the GitHub repo with a token instead.
+    const AT_ADMIN = /^https?:$/.test(location.protocol) && /\/admin\/(index\.html)?$/.test(location.pathname);
+    const GH = AT_ADMIN && /\.github\.io$/i.test(location.hostname);
+    const ONLINE = AT_ADMIN && !GH;   // PHP hosting (admin/api.php)
+    const SITE_BASE = new URL(AT_ADMIN ? '../' : '.', location.href).href;
+    // username.github.io/admin/ -> repo "username.github.io"; username.github.io/repo/admin/ -> repo "repo".
+    const GH_OWNER = GH ? location.hostname.split('.')[0] : '';
+    const GH_REPO = GH ? (location.pathname.split('/').filter(Boolean).length > 1 ? location.pathname.split('/').filter(Boolean)[0] : location.hostname.toLowerCase()) : '';
+    const GH_BRANCH = 'main';
+    let ghToken = '';
+    let dir = null;             // folder handle, or true once logged in online
+    const welcome = document.getElementById('welcome');
+    const welcomeText = document.getElementById('welcomeText');
+    const welcomeBtn = document.getElementById('welcomeBtn');
+
+    async function api(action, data, isForm) {
+      const opts = { method: 'POST', credentials: 'same-origin', headers: { 'X-SKG-Admin': '1' } };
+      if (isForm) opts.body = data;
+      else { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(data || {}); }
+      let r, j;
+      try {
+        r = await fetch('api.php?action=' + action, opts);
+        j = await r.json();
+      } catch (e) { throw new Error('Could not reach the server (' + e.message + ')'); }
+      if (r.status === 401) { dir = null; showLogin(false, j.error); }
+      if (!j.ok) throw new Error(j.error || 'Server error');
+      return j;
+    }
+
+    function showLogin(setup, msg) {
+      document.getElementById('welcomeTitle').textContent = setup ? 'Set up the website editor' : 'SKG website editor';
+      welcomeText.innerHTML =
+        (msg ? '<span style="color:#ff8e9b">' + esc(msg) + '</span><br><br>' : '') +
+        (setup ? 'First time here: enter the <b>setup code</b> you were given, then choose an admin password (8+ characters).'
+               : 'Enter the admin password to edit the website.') +
+        '<form id="loginForm" style="display:grid;gap:8px;max-width:300px;margin:16px auto 0;text-align:left">' +
+        (setup ? '<input type="text" id="codeIn" placeholder="Setup code" autocomplete="off" required>' : '') +
+        '<input type="password" id="passIn" placeholder="' + (setup ? 'New admin password' : 'Password') + '" autocomplete="' +
+        (setup ? 'new-password' : 'current-password') + '" required minlength="' + (setup ? 8 : 1) + '">' +
+        (setup ? '<input type="password" id="pass2In" placeholder="Password again" autocomplete="new-password" required>' : '') +
+        '<button class="primary" type="submit">' + (setup ? 'Set password' : 'Log in') + '</button></form>';
+      welcomeBtn.hidden = true;
+      welcome.hidden = false;
+      document.getElementById('loginForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const pass = document.getElementById('passIn').value;
+        try {
+          if (setup) {
+            if (pass !== document.getElementById('pass2In').value) throw new Error('The two passwords are not the same.');
+            await api('setup', { code: document.getElementById('codeIn').value, password: pass });
+          } else {
+            await api('login', { password: pass });
+          }
+          dir = true;
+          welcome.hidden = true;
+          load();
+        } catch (err) { showLogin(setup, err.message); }
+      });
+      const first = document.getElementById(setup ? 'codeIn' : 'passIn');
+      if (first) first.focus();
+    }
+
+    // ---------------- GitHub (token) ----------------
+    // The token is kept in this browser only (localStorage), never in the website.
+    function ghUrl(path) {
+      return 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' +
+             path.split('/').map(encodeURIComponent).join('/');
+    }
+    async function gh(path, opts, raw) {
+      opts = opts || {};
+      opts.headers = Object.assign({ 'Authorization': 'Bearer ' + ghToken, 'Accept': raw ? 'application/vnd.github.raw' : 'application/vnd.github+json' }, opts.headers || {});
+      const q = path.indexOf('?');
+      const r = await fetch(q < 0 ? ghUrl(path) : ghUrl(path.slice(0, q)) + path.slice(q), opts);
+      if (r.status === 401) { ghLogout(); showToken('GitHub did not accept the token. Make a new one.'); throw new Error('Token not accepted'); }
+      return r;
+    }
+    function toBase64(bytes) {
+      let s = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(s);
+    }
+    async function ghSha(path) {
+      const r = await gh(path + '?ref=' + GH_BRANCH);
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error('GitHub: HTTP ' + r.status);
+      return (await r.json()).sha;
+    }
+    async function ghPut(path, bytes, message) {
+      const sha = await ghSha(path);
+      const body = { message: message, content: toBase64(bytes), branch: GH_BRANCH };
+      if (sha) body.sha = sha;
+      const r = await gh(path, { method: 'PUT', body: JSON.stringify(body) });
+      if (!r.ok) { let m = ''; try { m = (await r.json()).message; } catch (e) {} throw new Error('GitHub: ' + (m || 'HTTP ' + r.status)); }
+    }
+    function ghLogout() { ghToken = ''; try { localStorage.removeItem('skg-gh-token'); } catch (e) {} dir = null; }
+
+    function showToken(msg) {
+      document.getElementById('welcomeTitle').textContent = 'SKG website editor';
+      const newUrl = 'https://github.com/settings/personal-access-tokens/new';
+      welcomeText.innerHTML =
+        (msg ? '<span style="color:#ff8e9b">' + esc(msg) + '</span><br><br>' : '') +
+        'Paste your <b>GitHub token</b> to edit <code>' + esc(GH_OWNER + '/' + GH_REPO) + '</code>.' +
+        '<br><span style="font-size:13px">No token yet? <a href="' + newUrl + '" target="_blank" rel="noopener" style="color:#f5a524">Make one</a>: ' +
+        'Repository access &rarr; <i>Only select repositories</i> &rarr; <code>' + esc(GH_REPO) + '</code>; ' +
+        'Permissions &rarr; <i>Contents: Read and write</i>; then Generate.</span>' +
+        '<form id="loginForm" style="display:grid;gap:8px;max-width:340px;margin:16px auto 0;text-align:left">' +
+        '<input type="password" id="passIn" placeholder="github_pat_..." autocomplete="off" required>' +
+        '<label style="display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px;margin:0">' +
+        '<input type="checkbox" id="rememberIn" checked> Remember on this device</label>' +
+        '<button class="primary" type="submit">Log in</button></form>';
+      welcomeBtn.hidden = true;
+      welcome.hidden = false;
+      document.getElementById('loginForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        ghToken = document.getElementById('passIn').value.trim();
+        const remember = document.getElementById('rememberIn').checked;
+        try {
+          const r = await gh('index.html?ref=' + GH_BRANCH);
+          if (r.status === 404) throw new Error('Repo ' + GH_OWNER + '/' + GH_REPO + ' or its index.html was not found, or the token cannot see it.');
+          if (!r.ok) throw new Error('GitHub: HTTP ' + r.status);
+          if (remember) { try { localStorage.setItem('skg-gh-token', ghToken); } catch (err) {} }
+          dir = true;
+          welcome.hidden = true;
+          load();
+        } catch (err) { ghToken = ''; showToken(err.message); }
+      });
+      document.getElementById('passIn').focus();
+    }
+
+    async function startGitHub() {
+      const folderBtn = document.getElementById('folderBtn');
+      folderBtn.textContent = 'Log out';
+      folderBtn.title = 'Forget the token on this device';
+      try { ghToken = localStorage.getItem('skg-gh-token') || ''; } catch (e) { ghToken = ''; }
+      if (!ghToken) { setStatus('Log in'); return showToken(); }
+      setStatus('Connecting...');
+      try {
+        const r = await gh('index.html?ref=' + GH_BRANCH);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        dir = true; welcome.hidden = true; load();
+      } catch (e) { if (ghToken) showToken('Could not reach GitHub (' + e.message + ').'); }
+    }
+
+    async function startOnline() {
+      const folderBtn = document.getElementById('folderBtn');
+      folderBtn.textContent = 'Log out';
+      folderBtn.title = 'Log out of the editor';
+      setStatus('Connecting...');
+      let st;
+      try { st = await (await fetch('api.php?action=status', { credentials: 'same-origin', cache: 'no-store' })).json(); }
+      catch (e) { setStatus('Server not reachable', 'err'); showWelcome('Could not reach <code>admin/api.php</code> (' + esc(e.message) + ').'); welcomeBtn.hidden = true; return; }
+      if (st.loggedIn) { dir = true; welcome.hidden = true; return load(); }
+      setStatus(st.setup ? 'Set the admin password' : 'Log in');
+      showLogin(st.setup);
+    }
+
+    function idb(op, value) {
+      return new Promise(function (resolve) {
+        try {
+          const req = indexedDB.open('skg-dev-editor', 1);
+          req.onupgradeneeded = function () { req.result.createObjectStore('kv'); };
+          req.onerror = function () { resolve(null); };
+          req.onsuccess = function () {
+            try {
+              const tx = req.result.transaction('kv', op === 'put' ? 'readwrite' : 'readonly');
+              const st = tx.objectStore('kv');
+              const r = op === 'put' ? st.put(value, 'dir') : st.get('dir');
+              r.onsuccess = function () { resolve(r.result || null); };
+              r.onerror = function () { resolve(null); };
+            } catch (e) { resolve(null); }
+          };
+        } catch (e) { resolve(null); }
+      });
+    }
+
+    function showWelcome(text, btnLabel) {
+      if (text) welcomeText.innerHTML = text;
+      welcomeBtn.textContent = btnLabel || 'Open website folder';
+      welcome.hidden = false;
+    }
+
+    async function useFolder(handle) {
+      try { await handle.getFileHandle('index.html'); }
+      catch (e) {
+        showWelcome('The folder <code>' + esc(handle.name) + '</code> has no <code>index.html</code>. Choose the website folder.');
+        setStatus('Wrong folder', 'err');
+        return;
+      }
+      dir = handle;
+      idb('put', handle);
+      document.getElementById('folderBtn').textContent = 'Folder: ' + handle.name;
+      welcome.hidden = true;
+      load();
+    }
+
+    async function pickFolder() {
+      if (!window.showDirectoryPicker) {
+        showWelcome('This browser cannot edit files. Open <code>dev.html</code> in <b>Google Chrome</b> or <b>Microsoft Edge</b>.');
+        welcomeBtn.hidden = true;
+        return;
+      }
+      // A remembered folder only needs permission again.
+      const saved = !dir && await idb('get');
+      try {
+        if (saved && await saved.requestPermission({ mode: 'readwrite' }) === 'granted') return useFolder(saved);
+        useFolder(await window.showDirectoryPicker({ id: 'skg-site', mode: 'readwrite' }));
+      } catch (e) {
+        if (e.name !== 'AbortError') setStatus(e.message, 'err');
+      }
+    }
+
+    async function start() {
+      if (GH) return startGitHub();
+      if (ONLINE) return startOnline();
+      setStatus('Choose the website folder');
+      const saved = await idb('get');
+      if (saved) {
+        try {
+          if (await saved.queryPermission({ mode: 'readwrite' }) === 'granted') return useFolder(saved);
+        } catch (e) { /* fall through to the button */ }
+        showWelcome('Last time you edited <code>' + esc(saved.name) + '</code>. Click to allow editing it again.', 'Continue with ' + saved.name);
+        return;
+      }
+      showWelcome();
+    }
+
+    async function readText(name) {
+      // From the repo itself: GitHub Pages can lag a minute behind the last save.
+      if (GH) {
+        const r = await gh(name + '?ref=' + GH_BRANCH + '&t=' + Date.now(), { cache: 'no-store' }, true);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      }
+      if (ONLINE) {
+        const r = await fetch(SITE_BASE + name + '?t=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      }
+      return (await (await dir.getFileHandle(name)).getFile()).text();
+    }
+
+    // Saves one site file and keeps the old copy; returns where the old copy went.
+    async function savePage(name, content) {
+      // GitHub keeps every version in the repo history, so no backup copy is needed.
+      if (GH) {
+        await ghPut(name, new TextEncoder().encode(content), 'Edit ' + name + ' (website editor)');
+        return '';
+      }
+      if (ONLINE) {
+        const j = await api('save', { file: name, content: content });
+        return j.backup ? 'admin backups/' + j.backup : '';
+      }
+      const now = new Date(), p2 = function (x) { return String(x).padStart(2, '0'); };
+      const stamp = now.getFullYear() + p2(now.getMonth() + 1) + p2(now.getDate()) + '-' +
+                    p2(now.getHours()) + p2(now.getMinutes()) + p2(now.getSeconds());
+      const dot = name.lastIndexOf('.');
+      const backupName = name.slice(0, dot) + '-' + stamp + name.slice(dot);
+      let backed = '';
+      if (await exists(dir, name)) {
+        const backups = await dir.getDirectoryHandle('backups', { create: true });
+        await writeFile(backups, backupName, await readText(name));
+        backed = 'backups/' + backupName;
+      }
+      await writeFile(dir, name, content);
+      return backed;
+    }
+    async function writeFile(folder, name, data) {
+      const w = await (await folder.getFileHandle(name, { create: true })).createWritable();
+      await w.write(data);
+      await w.close();
+    }
+    async function exists(folder, name) {
+      try { await folder.getFileHandle(name); return true; } catch (e) { return false; }
+    }
+
+    // ---------------- load ----------------
+    async function load() {
+      if (!dir) return start();
+      setStatus('Loading...');
+      let html;
+      try {
+        html = await readText(page);
+      } catch (e) {
+        showWelcome('Could not read <code>' + esc(page) + '</code> (' + esc(e.message) + '). Choose the website folder again.');
+        setStatus('Could not read ' + page, 'err');
+        return;
+      }
+      document.getElementById('openPage').href = SITE_BASE + page;
+      srcDoc = new DOMParser().parseFromString(html, 'text/html');
+      let n = 0;
+      srcDoc.body.querySelectorAll('*').forEach(function (el) { el.setAttribute('data-eid', String(++n)); });
+      nextEid = n + 1;
+      readSettings();
+      readSocials();
+      await readProjects();
+
+      // The iframe gets a copy with a <base> so images and fonts resolve from the site folder.
+      const view = srcDoc.cloneNode(true);
+      const base = view.createElement('base');
+      base.href = SITE_BASE;
+      view.head.insertBefore(base, view.head.firstChild);
+      frame.onload = setupFrame;
+      frame.srcdoc = '<!DOCTYPE html>\n' + view.documentElement.outerHTML;
+
+      dirtyText = new Set(); dirty = false; selected = null;
+      saveBtn.disabled = true;
+      showInspector(null);
+    }
+
+    function setupFrame() {
+      const d = frame.contentDocument;
+      const style = d.createElement('style');
+      style.textContent =
+        'html.dev-edit [data-dev-text]:hover{outline:1px dashed rgba(255,255,255,.45);outline-offset:2px;cursor:text}' +
+        'html.dev-edit [data-dev-text]:focus{outline:2px solid #f5a524;outline-offset:2px}' +
+        'html.dev-edit .dev-sel{outline:2px solid #e3122b !important;outline-offset:3px}' +
+        'html.dev-edit img:hover, html.dev-edit a:hover{cursor:pointer}';
+      d.head.appendChild(style);
+
+      markEditable(d.body);
+
+      // Edit mode swallows clicks so links, buttons and forms don't fire.
+      d.addEventListener('click', function (e) {
+        if (mode !== 'edit') return;
+        e.preventDefault();
+        e.stopPropagation();
+        // Project cards are drawn from projects.js - open that project in the Projects panel.
+        const card = e.target.closest('[data-proj]');
+        if (card) {
+          select(null);
+          openProj = Number(card.getAttribute('data-proj'));
+          renderProjPanel();
+          const row = projList.querySelector('.prj.open');
+          if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          return;
+        }
+        // Skill bars are edited as one piece; the bar's label stays typeable.
+        const whole = !e.target.closest('[data-dev-text]') && e.target.closest('.bar');
+        select(whole || e.target.closest('img, a, input, textarea, [data-to], [data-dev-text], [data-eid]'));
+      }, true);
+      d.addEventListener('submit', function (e) { if (mode === 'edit') { e.preventDefault(); e.stopPropagation(); } }, true);
+      d.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
+      });
+      applyMode();
+      if (pendingStatus) { setStatus(pendingStatus[0], pendingStatus[1]); pendingStatus = null; }
+      else setStatus(dirty ? 'Unsaved changes' : 'Ready', dirty ? 'dirty' : '');
+    }
+
+    // Outermost elements that hold their own text become typeable.
+    function markEditable(root) {
+      const list = [root].concat(Array.prototype.slice.call(root.querySelectorAll('[data-eid]')));
+      list.forEach(function (el) {
+        if (!el.getAttribute || !el.getAttribute('data-eid') || el.hasAttribute('data-dev-text')) return;
+        if (!TEXT_TAGS.has(el.tagName) || el.closest('svg, script, style, ' + SCRIPT_FILLED)) return;
+        if (el.parentElement && el.parentElement.closest('[data-dev-text]')) return;
+        const ownText = Array.prototype.some.call(el.childNodes, function (c) { return c.nodeType === 3 && c.textContent.trim(); });
+        if (!ownText) return;
+        el.setAttribute('data-dev-text', '');
+        if (mode === 'edit') el.setAttribute('contenteditable', 'true');
+        el.addEventListener('input', function () { dirtyText.add(el.getAttribute('data-eid')); markDirty(); });
+      });
+    }
+
+    function applyMode() {
+      const d = frame.contentDocument;
+      if (!d || !d.documentElement) return;
+      d.documentElement.classList.toggle('dev-edit', mode === 'edit');
+      d.querySelectorAll('[data-dev-text]').forEach(function (el) {
+        if (mode === 'edit') el.setAttribute('contenteditable', 'true'); else el.removeAttribute('contenteditable');
+      });
+      if (mode !== 'edit') select(null);
+    }
+
+    // ---------------- inspector ----------------
+    function select(el) {
+      if (selected) selected.classList.remove('dev-sel');
+      selected = el && el.getAttribute('data-eid') ? el : null;
+      if (selected) {
+        selected.classList.add('dev-sel');
+        if (selected.hasAttribute('data-dev-text')) selected.focus();
+      }
+      showInspector(selected);
+    }
+
+    function showInspector(el) {
+      if (!el) {
+        inspector.innerHTML = '<p class="hint">Click anything on the page. Text can be typed straight into the page.</p>';
+        return;
+      }
+      const s = src(el.getAttribute('data-eid'));
+      let h = '<span class="tag">&lt;' + el.tagName.toLowerCase() + (el.className && typeof el.className === 'string'
+        ? ' .' + esc(el.className.replace(/\s*dev-sel\s*/, ' ').trim().split(/\s+/).join('.')) : '') + '&gt;</span>';
+      if (el.hasAttribute('data-dev-text')) h += '<p class="hint" style="margin-top:8px">Type straight into the page to change this text.</p>';
+      let fields = 0;
+      ATTRS.forEach(function (a) {
+        const name = a[0];
+        // Offer href on every link, src/alt on every image, and the rest only where they already exist.
+        const relevant = s.hasAttribute(name) || (name === 'href' && el.tagName === 'A') ||
+                         ((name === 'src' || name === 'alt') && el.tagName === 'IMG');
+        if (!relevant) return;
+        fields++;
+        h += '<label for="a_' + name + '">' + a[1] + '</label><input type="text" id="a_' + name + '" data-attr="' + name +
+             '" value="' + esc(s.getAttribute(name) || '') + '">';
+        if (name === 'src') {
+          h += '<img class="thumb" id="thumb" src="' + esc(el.getAttribute('src') || '') + '" alt="">' +
+               '<div class="row"><label class="btn" style="margin:0;color:var(--text)">Upload new image' +
+               '<input type="file" id="upload" accept="image/*" hidden></label></div>';
+        }
+      });
+      const isBar = el.classList.contains('bar');
+      if (isBar) {
+        const w = parseInt(s.querySelector('i[data-w]') ? s.querySelector('i[data-w]').getAttribute('data-w') : '0', 10) || 0;
+        h += '<label for="barRange">Skill level: <b id="barVal">' + w + '%</b></label>' +
+             '<input type="range" id="barRange" min="0" max="100" value="' + w + '">' +
+             '<p class="hint" style="margin-top:6px">The bar and the % number move together. Click the name to retype it.</p>';
+      }
+      if (!fields && !isBar && !el.hasAttribute('data-dev-text')) h += '<p class="hint" style="margin-top:8px">Nothing to type here. Use the buttons below, or click the text or image inside it.</p>';
+
+      const canParent = el.parentElement && el.parentElement.getAttribute('data-eid');
+      h += '<div class="tools">' +
+           '<button class="small" data-act="parent"' + (canParent ? '' : ' disabled') + ' title="Select the box around this">Bigger</button>' +
+           '<button class="small" data-act="up" title="Move before the previous item">Move up</button>' +
+           '<button class="small" data-act="down" title="Move after the next item">Move down</button>' +
+           '<button class="small" data-act="dup" title="Add a copy right after this">Copy</button>' +
+           '<button class="small danger" data-act="del" style="grid-column: span 2">Delete</button>' +
+           '</div>';
+      inspector.innerHTML = h;
+
+      inspector.querySelectorAll('[data-act]').forEach(function (b) {
+        b.addEventListener('click', function () { structure(el, b.dataset.act); });
+      });
+      const range = document.getElementById('barRange');
+      if (range) range.addEventListener('input', function () { setBar(el, range.value); });
+
+      inspector.querySelectorAll('input[data-attr]').forEach(function (inp) {
+        inp.addEventListener('input', function () { setAttr(el, inp.dataset.attr, inp.value); });
+      });
+      const up = document.getElementById('upload');
+      if (up) up.addEventListener('change', function () { if (up.files[0]) uploadImage(el, up.files[0]); });
+    }
+
+    function setAttr(el, name, value) {
+      src(el.getAttribute('data-eid')).setAttribute(name, value);
+      el.setAttribute(name, value);
+      if (name === 'src') { const t = document.getElementById('thumb'); if (t) t.src = value; }
+      markDirty();
+    }
+
+    async function uploadImage(el, file) {
+      try {
+        const path = await uploadFile(file);
+        setAttr(el, 'src', path);
+        const inp = document.getElementById('a_src'); if (inp) inp.value = path;
+        setStatus('Image uploaded - remember to Save', 'dirty');
+      } catch (e) { setStatus(e.message, 'err'); }
+    }
+
+    // Copies the picked image into the "uploads" folder and returns its path for src="".
+    async function uploadFile(file) {
+      if (!/^(image|video)\//.test(file.type)) throw new Error('Only pictures and videos can be added.');
+      setStatus('Adding ' + file.name + '...');
+      if (GH) {
+        if (file.size > 25 * 1024 * 1024) throw new Error('This file is over 25 MB. Use a YouTube link for big videos.');
+        const clean = file.name.replace(/[^\w.\-]/g, '-');
+        const dot = clean.lastIndexOf('.');
+        const stem = dot > 0 ? clean.slice(0, dot) : clean, ext = dot > 0 ? clean.slice(dot) : '';
+        let name = clean, n = 1;
+        while (await ghSha('uploads/' + name)) name = stem + '-' + (n++) + ext;
+        await ghPut('uploads/' + name, new Uint8Array(await file.arrayBuffer()), 'Add uploads/' + name + ' (website editor)');
+        return 'uploads/' + name;
+      }
+      if (ONLINE) {
+        if (file.size > 10 * 1024 * 1024) throw new Error('This file is over 10 MB, the hosting limit. Use a YouTube link for big videos.');
+        const fd = new FormData();
+        fd.append('file', file);
+        return (await api('upload', fd, true)).path;
+      }
+      const up = await dir.getDirectoryHandle('uploads', { create: true });
+      const clean = file.name.replace(/[^\w.\-]/g, '-');
+      const dot = clean.lastIndexOf('.');
+      const stem = dot > 0 ? clean.slice(0, dot) : clean, ext = dot > 0 ? clean.slice(dot) : '';
+      let name = clean, n = 1;
+      while (await exists(up, name)) name = stem + '-' + (n++) + ext;
+      await writeFile(up, name, file);
+      return 'uploads/' + name;
+    }
+
+    // ---------------- skill bars ----------------
+    function setBar(el, value) {
+      const v = String(Math.max(0, Math.min(100, parseInt(value, 10) || 0)));
+      [src(el.getAttribute('data-eid')), el].forEach(function (b) {
+        const i = b.querySelector('i[data-w]'), p = b.querySelector('.p');
+        if (i) i.setAttribute('data-w', v);
+        if (p) p.textContent = v + '%';
+      });
+      const liveI = el.querySelector('i[data-w]');
+      if (liveI) liveI.style.width = v + '%';
+      document.getElementById('barVal').textContent = v + '%';
+      markDirty();
+    }
+
+    // ---------------- projects (projects.js) ----------------
+    // Same shape as projects.js; index.html shows the first 4 featured, projects.html shows all.
+    const PROJECTS_HEADER =
+      '// =========================================================\n' +
+      '//  PROJECTS - used by index.html (featured) and projects.html (all).\n' +
+      '//  Edit these in dev.html (Projects panel) - it rewrites this file.\n' +
+      '//  image: picture shown on the card and in the viewer\n' +
+      '//  video: a file in uploads/ or a YouTube / other video link\n' +
+      '//  featured: true = shown on the home page (first 4)\n' +
+      '// =========================================================\n';
+    const projList = document.getElementById('projList');
+
+    async function readProjects() {
+      projects = [];
+      projectsDirty = false;
+      try {
+        const t = await readText('projects.js');
+        projects = JSON.parse(t.slice(t.indexOf('['), t.lastIndexOf(']') + 1));
+      } catch (e) { /* no projects.js yet - starts empty */ }
+      renderProjPanel();
+    }
+
+    function projThumb(p) {
+      if (p.image) return '<img src="' + esc(p.image) + '" alt="">';
+      if (/\.(mp4|webm|ogg|mov|m4v)$/i.test(p.video || '')) return '<video src="' + esc(p.video) + '#t=0.5" muted preload="metadata"></video>';
+      return '<span>' + (p.video ? '&#9654;' : '&#9633;') + '</span>';
+    }
+
+    function renderProjPanel() {
+      projList.innerHTML = projects.length ? '' : '<p class="hint">No projects yet.</p>';
+      projects.forEach(function (p, i) {
+        const row = document.createElement('div');
+        row.className = 'prj' + (i === openProj ? ' open' : '');
+        row.innerHTML =
+          '<div class="prj-top"><div class="prj-th">' + projThumb(p) + '</div>' +
+          '<button class="prj-name" title="Edit">' + esc(p.title || 'Untitled') + '</button>' +
+          '<button class="small star' + (p.featured ? ' on' : '') + '" title="Show on home page">&#9733;</button>' +
+          '<button class="small" data-mv="-1" title="Move up">&uarr;</button>' +
+          '<button class="small" data-mv="1" title="Move down">&darr;</button></div>';
+        if (i === openProj) {
+          row.innerHTML += '<div class="prj-form">' +
+            '<label>Title</label><input type="text" data-f="title" value="' + esc(p.title) + '">' +
+            '<label>Category</label><input type="text" data-f="category" value="' + esc(p.category) + '">' +
+            '<label>Description (shown when opened)</label><textarea data-f="description">' + esc(p.description) + '</textarea>' +
+            '<label>Picture</label><input type="text" data-f="image" placeholder="uploads/picture.jpg" value="' + esc(p.image) + '">' +
+            '<div class="row"><label class="btn" style="margin:0;color:var(--text)">Upload picture<input type="file" data-up="image" accept="image/*" hidden></label></div>' +
+            '<label>Video (upload a file, or paste a YouTube / TikTok / Drive link)</label><input type="text" data-f="video" placeholder="https://youtu.be/..." value="' + esc(p.video) + '">' +
+            '<div class="row"><label class="btn" style="margin:0;color:var(--text)">Upload video<input type="file" data-up="video" accept="video/*" hidden></label></div>' +
+            '<label>Extra link button (optional)</label><input type="text" data-f="link" placeholder="https://..." value="' + esc(p.link) + '">' +
+            '<div class="row"><button class="small danger" data-del>Delete project</button></div></div>';
+        }
+        row.querySelector('.prj-name').addEventListener('click', function () { openProj = openProj === i ? -1 : i; renderProjPanel(); });
+        row.querySelector('.star').addEventListener('click', function () { p.featured = !p.featured; changeProjects(true); });
+        row.querySelectorAll('[data-mv]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            const j = i + Number(b.dataset.mv);
+            if (j < 0 || j >= projects.length) return;
+            projects.splice(j, 0, projects.splice(i, 1)[0]);
+            if (openProj === i) openProj = j;
+            changeProjects(true);
+          });
+        });
+        row.querySelectorAll('[data-f]').forEach(function (inp) {
+          inp.addEventListener('input', function () {
+            p[inp.dataset.f] = inp.value.trim();
+            if (inp.dataset.f === 'title') row.querySelector('.prj-name').textContent = p.title || 'Untitled';
+            changeProjects(false);
+          });
+          // Picture / video paths: refresh the small preview once typing is done.
+          inp.addEventListener('change', function () { row.querySelector('.prj-th').innerHTML = projThumb(p); });
+        });
+        row.querySelectorAll('[data-up]').forEach(function (inp) {
+          inp.addEventListener('change', async function () {
+            if (!inp.files[0]) return;
+            try {
+              p[inp.dataset.up] = await uploadFile(inp.files[0]);
+              changeProjects(true);
+              setStatus((inp.dataset.up === 'video' ? 'Video' : 'Picture') + ' added - remember to Save', 'dirty');
+            } catch (e) { setStatus(e.message, 'err'); }
+          });
+        });
+        const del = row.querySelector('[data-del]');
+        if (del) del.addEventListener('click', function () {
+          if (!confirm('Delete the project "' + (p.title || 'Untitled') + '"?')) return;
+          projects.splice(i, 1);
+          openProj = -1;
+          changeProjects(true);
+        });
+        projList.appendChild(row);
+      });
+    }
+
+    function changeProjects(redrawPanel) {
+      projectsDirty = true;
+      markDirty();
+      if (redrawPanel) renderProjPanel();
+      previewProjects();
+    }
+
+    // Redraws the home page cards in the preview with the unsaved list.
+    function previewProjects() {
+      const w = frame.contentWindow, d = frame.contentDocument;
+      const grid = d && d.getElementById('projGrid');
+      if (!grid || !w.SKG_renderProjects) return;
+      w.SKG_PROJECTS = JSON.parse(JSON.stringify(projects));
+      // Same options each page uses itself: home shows 4 featured, the projects page shows all.
+      w.SKG_renderProjects(grid, page === 'index.html' ? { featured: true, limit: 4, reveal: true } : {});
+      grid.querySelectorAll('.reveal').forEach(function (c) { c.classList.add('in'); });
+    }
+
+    document.getElementById('projAdd').addEventListener('click', function () {
+      projects.push({ title: 'New project', category: '', description: '', image: '', video: '', link: '', featured: false, mockStyle: '', mock: '' });
+      openProj = projects.length - 1;
+      changeProjects(true);
+      const t = projList.querySelector('.prj.open input');
+      if (t) { t.focus(); t.select(); }
+    });
+
+    // ---------------- delete / copy / move ----------------
+    // Every change is made to both srcDoc (what gets saved) and the iframe (what you see).
+    function structure(el, act) {
+      const eid = el.getAttribute('data-eid');
+      const s = src(eid);
+      if (!s) return;
+      if (act === 'parent') { select(el.parentElement); return; }
+      if (act === 'del') {
+        const what = el.querySelector('h1, h2, h3, h4') ? '"' + el.querySelector('h1, h2, h3, h4').textContent.trim().slice(0, 40) + '"' : 'this';
+        if (el.querySelectorAll('[data-eid]').length > 15 && !confirm('Delete ' + what + ' and everything inside it?')) return;
+        select(null);
+        s.remove(); el.remove();
+        markDirty();
+        return;
+      }
+      if (act === 'up' || act === 'down') {
+        const sib = act === 'up' ? el.previousElementSibling : el.nextElementSibling;
+        if (!sib || !sib.getAttribute('data-eid')) { setStatus('Nothing to move past', ''); return; }
+        const sSib = src(sib.getAttribute('data-eid'));
+        if (act === 'up') { sib.before(el); sSib.before(s); } else { sib.after(el); sSib.after(s); }
+        markDirty();
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        return;
+      }
+      if (act === 'dup') {
+        collectText();   // so the copy includes text typed but not saved yet
+        const sCopy = srcDoc.importNode(src(eid), true);
+        [sCopy].concat(Array.prototype.slice.call(sCopy.querySelectorAll('[data-eid]'))).forEach(function (k) {
+          k.setAttribute('data-eid', String(nextEid++));
+        });
+        s.after(sCopy);
+        const d = frame.contentDocument;
+        const lCopy = d.importNode(sCopy, true);
+        // Show it the way the site's scripts would after scrolling into view.
+        [lCopy].concat(Array.prototype.slice.call(lCopy.querySelectorAll('*'))).forEach(function (k) {
+          if (k.classList.contains('reveal')) k.classList.add('in');
+          if (k.matches('.bar i[data-w]')) k.style.width = k.getAttribute('data-w') + '%';
+          if (k.classList.contains('count')) k.textContent = k.getAttribute('data-to');
+        });
+        el.after(lCopy);
+        markEditable(lCopy);
+        markDirty();
+        select(lCopy);
+        lCopy.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    // ---------------- social media ----------------
+    function iconFor(a) {
+      const svg = a.querySelector('svg');
+      return svg ? svg.innerHTML : '';
+    }
+    function readSocials() {
+      const row = srcDoc.querySelector('.socials');
+      socials = row ? Array.prototype.map.call(row.querySelectorAll('a'), function (a) {
+        const name = a.getAttribute('aria-label') || 'Link';
+        return { name: name, href: a.getAttribute('href') === '#' ? '' : a.getAttribute('href') || '', icon: SOCIAL_ICONS[name] || iconFor(a) };
+      }) : [];
+      socialsChanged = false;
+      document.getElementById('socialSec').hidden = !row;
+      renderSocialPanel();
+    }
+    function renderSocialPanel() {
+      const list = document.getElementById('socialList');
+      list.innerHTML = socials.length ? '' : '<p class="hint">No social links yet.</p>';
+      socials.forEach(function (s, i) {
+        const row = document.createElement('div');
+        row.className = 'soc';
+        row.innerHTML = '<svg viewBox="0 0 24 24">' + s.icon + '</svg><span class="name">' + esc(s.name) + '</span>' +
+          '<button class="small danger" title="Remove ' + esc(s.name) + '">&times;</button>' +
+          '<span></span><input type="text" placeholder="https://..." value="' + esc(s.href) + '">';
+        row.querySelector('input').addEventListener('input', function (e) { s.href = e.target.value.trim(); applySocials(); });
+        row.querySelector('button').addEventListener('click', function () { socials.splice(i, 1); applySocials(); renderSocialPanel(); });
+        list.appendChild(row);
+      });
+      const add = document.getElementById('socialAdd');
+      add.innerHTML = Object.keys(SOCIAL_ICONS).map(function (n) { return '<option>' + n + '</option>'; }).join('');
+    }
+    document.getElementById('socialAddBtn').addEventListener('click', function () {
+      const name = document.getElementById('socialAdd').value;
+      socials.push({ name: name, href: '', icon: SOCIAL_ICONS[name] });
+      applySocials();
+      renderSocialPanel();
+      const inputs = document.querySelectorAll('#socialList input');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+    function socialHTML() {
+      return socials.map(function (s) {
+        const ext = /^https?:/i.test(s.href);
+        return '<a href="' + esc(s.href || '#') + '" aria-label="' + esc(s.name) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') +
+               '><svg viewBox="0 0 24 24">' + s.icon + '</svg></a>';
+      }).join('\n            ');
+    }
+    // Rebuilds every .socials row (top of page and footer) in both copies.
+    function applySocials() {
+      socialsChanged = true;
+      const html = socialHTML();
+      srcDoc.querySelectorAll('.socials').forEach(function (r) { r.innerHTML = html; });
+      const d = frame.contentDocument;
+      if (d) d.querySelectorAll('.socials').forEach(function (r) { r.innerHTML = html; });
+      markDirty();
+    }
+
+    // ---------------- contact settings ----------------
+    function settingsScript(doc) {
+      return Array.prototype.find.call(doc.querySelectorAll('script'), function (s) { return s.textContent.indexOf('OWNER_EMAIL') !== -1; });
+    }
+    function readSettings() {
+      const sc = settingsScript(srcDoc);
+      settings = {};
+      document.getElementById('contactSec').hidden = !sc;
+      SETTINGS.forEach(function (k) {
+        const m = sc && sc.textContent.match(new RegExp('const ' + k + " = '([^']*)'"));
+        settings[k] = m ? m[1] : '';
+        const inp = document.getElementById('s_' + k);
+        inp.value = settings[k];
+        inp.disabled = !m;
+      });
+    }
+    SETTINGS.forEach(function (k) {
+      document.getElementById('s_' + k).addEventListener('input', markDirty);
+    });
+
+    function applySettings() {
+      const sc = settingsScript(srcDoc);
+      if (!sc) return;
+      let code = sc.textContent;
+      SETTINGS.forEach(function (k) {
+        const v = document.getElementById('s_' + k).value.trim().replace(/['\\]/g, '');
+        code = code.replace(new RegExp("(const " + k + " = ')[^']*(')"), function (_, a, b) { return a + v + b; });
+      });
+      sc.textContent = code;
+
+      const oldWa = settings.OWNER_WHATSAPP.replace(/\D/g, ''), newWa = document.getElementById('s_OWNER_WHATSAPP').value.replace(/\D/g, '');
+      const oldMail = settings.OWNER_EMAIL, newMail = document.getElementById('s_OWNER_EMAIL').value.trim();
+      srcDoc.querySelectorAll('a[href]').forEach(function (a) {
+        let href = a.getAttribute('href');
+        if (oldWa && newWa && oldWa !== newWa) href = href.split('wa.me/' + oldWa).join('wa.me/' + newWa);
+        if (oldMail && newMail && oldMail !== newMail) href = href.split('mailto:' + oldMail).join('mailto:' + newMail);
+        a.setAttribute('href', href);
+      });
+      // The email address is also shown as text next to those links.
+      if (oldMail && newMail && oldMail !== newMail) {
+        const w = srcDoc.createTreeWalker(srcDoc.body, NodeFilter.SHOW_TEXT);
+        let t; while ((t = w.nextNode())) { if (t.textContent.indexOf(oldMail) !== -1) t.textContent = t.textContent.split(oldMail).join(newMail); }
+      }
+    }
+
+    // ---------------- save ----------------
+    // Copies typed text back into srcDoc. Anything the site's scripts changed at runtime
+    // (animated counters, reveal classes, slider styles) is reset to what index.html had.
+    function collectText() {
+      const d = frame.contentDocument;
+      dirtyText.forEach(function (eid) {
+        const live = d.querySelector('[data-eid="' + eid + '"]');
+        const target = src(eid);
+        if (!live || !target) return;
+        const c = live.cloneNode(true);
+        c.querySelectorAll('[data-eid]').forEach(function (k) {
+          const orig = src(k.getAttribute('data-eid'));
+          if (!orig) return;
+          Array.prototype.slice.call(k.attributes).forEach(function (a) { k.removeAttribute(a.name); });
+          Array.prototype.forEach.call(orig.attributes, function (a) { k.setAttribute(a.name, a.value); });
+          if (orig.matches(SCRIPT_FILLED)) k.innerHTML = orig.innerHTML;
+        });
+        c.querySelectorAll('[contenteditable], [data-dev-text]').forEach(function (k) { k.removeAttribute('contenteditable'); k.removeAttribute('data-dev-text'); });
+        target.innerHTML = c.innerHTML;
+      });
+    }
+
+    async function save() {
+      if (!dirty) return;
+      saveBtn.disabled = true;
+      setStatus('Saving...');
+      try {
+        collectText();
+        applySettings();
+        const out = srcDoc.cloneNode(true);
+        out.querySelectorAll('[data-eid]').forEach(function (el) { el.removeAttribute('data-eid'); });
+        const html = '<!DOCTYPE html>\n' + out.documentElement.outerHTML + '\n';
+        // savePage keeps the current file as a backup before overwriting it.
+        const backup = await savePage(page, html);
+        if (projectsDirty) {
+          await savePage('projects.js', PROJECTS_HEADER + 'window.SKG_PROJECTS = ' + JSON.stringify(projects, null, 2) + ';\n');
+        }
+        pendingStatus = [GH ? 'Saved - the website updates in about a minute.' : ONLINE ? 'Saved - the website is updated.' :
+                         'Saved.' + (backup ? ' Old version: ' + backup : ''), 'ok'];
+        await load();
+      } catch (e) {
+        saveBtn.disabled = false;
+        setStatus('Save failed: ' + e.message, 'err');
+      }
+    }
+
+    // ---------------- toolbar ----------------
+    saveBtn.addEventListener('click', save);
+    document.getElementById('undoBtn').addEventListener('click', function () {
+      if (!dirty || confirm('Throw away all unsaved changes?')) load();
+    });
+    document.querySelectorAll('#pageSeg button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (b.dataset.page === page) return;
+        if (dirty && !confirm('You have unsaved changes on this page. Throw them away and switch page?')) return;
+        page = b.dataset.page;
+        document.querySelectorAll('#pageSeg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+        dirty = false;
+        load();
+      });
+    });
+    document.querySelectorAll('#modeSeg button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        mode = b.dataset.mode;
+        document.querySelectorAll('#modeSeg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+        applyMode();
+      });
+    });
+    document.querySelectorAll('#sizeSeg button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.getElementById('stage').classList.toggle('mobile', b.dataset.size === 'mobile');
+        document.querySelectorAll('#sizeSeg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
+    });
+    window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+    renderSocialPanel();
+    welcomeBtn.addEventListener('click', pickFolder);
+    document.getElementById('folderBtn').addEventListener('click', async function () {
+      if (GH) {
+        if (dirty && !confirm('Throw away unsaved changes and log out?')) return;
+        dirty = false;
+        ghLogout();
+        return startGitHub();
+      }
+      if (ONLINE) {
+        if (dirty && !confirm('Throw away unsaved changes and log out?')) return;
+        dirty = false;
+        try { await api('logout'); } catch (e) { /* already logged out */ }
+        dir = null;
+        return startOnline();
+      }
+      if (dirty && !confirm('Throw away unsaved changes and open another folder?')) return;
+      try {
+        const handle = await window.showDirectoryPicker({ id: 'skg-site', mode: 'readwrite' });
+        dirty = false;
+        useFolder(handle);
+      }
+      catch (e) { if (e.name !== 'AbortError') setStatus(e.message, 'err'); }
+    });
+
+    start();
+  })();
+  </script>
+</body>
+</html>

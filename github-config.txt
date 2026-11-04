@@ -1,0 +1,5 @@
+# Your GitHub username, and the repo the site lives in.
+# For https://USERNAME.github.io use repo=USERNAME.github.io
+owner=skgyt2-web
+repo=skgyt2-web.github.io
+branch=main

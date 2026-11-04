@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects | SKG Creator Studio</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       ALL PROJECTS - same look as index.html.
+       Projects come from projects.js (edit them in dev.html).
+       ========================================================= */
+    :root {
+      --red: #e3122b;
+      --red-dark: #a10c1f;
+      --bg: #050106;
+      --panel: rgba(10, 4, 10, 0.62);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-red: rgba(227, 18, 43, 0.45);
+      --text: #f4eef0;
+      --muted: #a99ea4;
+      --head: 'Oswald', 'Arial Narrow', sans-serif;
+      --body: 'Inter', system-ui, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh; color: var(--text); font-family: var(--body); font-size: 15px; line-height: 1.6;
+      background: radial-gradient(1200px 600px at 80% -10%, rgba(227,18,43,.18), transparent 60%),
+                  radial-gradient(900px 500px at -10% 110%, rgba(161,12,31,.16), transparent 60%), var(--bg);
+      background-attachment: fixed;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; }
+    img, svg { display: block; }
+    .wrap { width: min(1200px, 100% - 32px); margin-inline: auto; }
+
+    .nav { position: sticky; top: 0; z-index: 50; background: rgba(5,1,6,.78); border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 76px; gap: 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo img { width: 44px; height: 44px; object-fit: contain; }
+    .logo b { display: block; font-family: var(--head); font-size: 19px; letter-spacing: .06em; line-height: 1; }
+    .logo small { display: block; font-size: 8.5px; letter-spacing: .25em; color: var(--muted); margin-top: 4px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px; border: 1px solid var(--red);
+      font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      cursor: pointer; background: transparent; transition: background .25s;
+    }
+    .btn svg { width: 15px; height: 15px; }
+    .btn-red { background: var(--red); }
+    .btn-red:hover { background: #ff2440; }
+    .btn-outline { color: var(--red); }
+    .btn-outline:hover { background: rgba(227,18,43,.12); }
+
+    .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--red); }
+    .page-head { padding: 56px 0 26px; }
+    .page-head h1 { font-weight: 700; font-size: clamp(28px, 4vw, 42px); line-height: 1.15; margin-top: 6px; }
+    .page-head p { color: var(--muted); max-width: 520px; margin-top: 10px; }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+    .filters button { border: 1px solid var(--line); background: rgba(0,0,0,.25); padding: 8px 16px; cursor: pointer;
+      font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #ddd; transition: .2s; }
+    .filters button:hover { border-color: var(--line-red); }
+    .filters button.on { background: var(--red); border-color: var(--red); color: #fff; }
+
+    .panel { background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding-bottom: 70px; }
+    .proj { overflow: hidden; transition: transform .35s, border-color .35s; }
+    .proj:hover { transform: translateY(-8px); border-color: var(--line-red); }
+    .thumb { aspect-ratio: 16/10; position: relative; overflow: hidden; border-bottom: 1px solid var(--line); background: rgba(0,0,0,.25); }
+    .thumb .mock { position: absolute; inset: 14% 12%; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; background: rgba(255,255,255,.04); transition: transform .5s; }
+    .proj:hover .thumb .mock { transform: scale(1.06); }
+    .thumb .mock i { position: absolute; display: block; background: rgba(255,255,255,.14); border-radius: 2px; }
+    .thumb .mock i.r { background: var(--red); }
+    .thumb > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+    .proj:hover .thumb > img { transform: scale(1.06); }
+    .proj .meta { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; }
+    .proj h3 { font-size: 14.5px; }
+    .proj small { font-size: 12px; color: var(--muted); }
+    .proj .go { width: 30px; height: 30px; border: 1px solid var(--line-red); display: grid; place-items: center; transition: background .25s; flex: none; }
+    .proj .go svg { width: 13px; height: 13px; stroke: var(--red); fill: none; stroke-width: 2; }
+    .proj:hover .go { background: var(--red); }
+    .empty { color: var(--muted); padding: 40px 0 80px; }
+
+    footer { border-top: 1px solid var(--line); text-align: center; font-size: 11.5px; color: var(--muted); padding: 22px 0; }
+
+    @media (max-width: 1000px) { .grid4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) {
+      .grid4 { grid-template-columns: 1fr; }
+      .nav .btn { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap">
+      <a href="index.html" class="logo">
+        <img src="logo.png" alt="SKG Creator Studio logo">
+        <div><b>SKG</b><small>CREATOR STUDIO</small></div>
+      </a>
+      <a href="index.html#contact" class="btn btn-outline">Let's Talk</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="page-head">
+      <div class="eyebrow">Portfolio</div>
+      <h1>All Projects</h1>
+      <p>Videos, designs and AI ads we have made. Click a project to see it.</p>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="grid4" id="projGrid"></div>
+  </main>
+
+  <footer>&copy; <span id="yr"></span> SKG Creator Studio. All Rights Reserved.</footer>
+
+  <script src="projects.js"></script>
+  <script src="projects-view.js"></script>
+  <script>
+    (function () {
+      const grid = document.getElementById('projGrid');
+      const filters = document.getElementById('filters');
+      const cats = [];
+      (window.SKG_PROJECTS || []).forEach(function (p) { if (p.category && cats.indexOf(p.category) === -1) cats.push(p.category); });
+
+      function render(cat) {
+        SKG_renderProjects(grid, { filter: cat || null });
+        if (!grid.children.length) grid.innerHTML = '<p class="empty">No projects yet.</p>';
+        filters.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', (b.dataset.cat || '') === (cat || '')); });
+      }
+      if (cats.length > 1) {
+        filters.innerHTML = '<button data-cat="">All</button>' + cats.map(function (c) {
+          return '<button data-cat="' + c.replace(/"/g, '&quot;') + '">' + c.replace(/</g, '&lt;') + '</button>';
+        }).join('');
+        filters.addEventListener('click', function (e) {
+          const b = e.target.closest('button');
+          if (b) render(b.dataset.cat);
+        });
+      }
+      render('');
+      document.getElementById('yr').textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>

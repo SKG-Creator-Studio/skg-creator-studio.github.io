@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKG Creator Studio</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       FORM SETTINGS: see "CONTACT FORM SETTINGS" near the bottom of this file
+       ========================================================= */
+    :root {
+      --red: #e3122b;
+      --red-dark: #a10c1f;
+      --bg: #050106;
+      --panel: rgba(10, 4, 10, 0.62);
+      --panel-solid: rgba(14, 6, 12, 0.78);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-red: rgba(227, 18, 43, 0.45);
+      --text: #f4eef0;
+      --muted: #a99ea4;
+      --dim: 0.35;               /* changed by script while scrolling */
+      --head: 'Oswald', 'Arial Narrow', sans-serif;
+      --body: 'Inter', system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input, textarea { font: inherit; color: inherit; }
+    img, svg { display: block; }
+
+    /* ---------- scroll animation background ---------- */
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      display: block;
+      z-index: 0;
+      image-rendering: auto;
+      filter: blur(0.3px) contrast(101%);
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+    /* darkens the animation so text stays readable; gets darker further down */
+    .shade {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(5,1,6,.85) 0%, rgba(5,1,6,.35) 45%, rgba(5,1,6,.15) 70%, rgba(5,1,6,.55) 100%),
+        linear-gradient(180deg, rgba(5,1,6,0) 60%, rgba(5,1,6,.8) 100%);
+    }
+    .shade::after {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(5,1,6,1);
+      opacity: var(--dim);
+      transition: opacity .2s linear;
+    }
+    #msg {
+      position: fixed; inset: 0; z-index: 2;
+      display: none; align-items: center; justify-content: center;
+      padding: 16px; text-align: center; color: #d8d0dc;
+      font: 16px/1.5 system-ui, sans-serif; pointer-events: none;
+    }
+
+    main, header, footer { position: relative; z-index: 3; }
+    .wrap { width: min(1200px, 100% - 32px); margin-inline: auto; }
+
+    /* ---------- reveal on scroll ---------- */
+    .reveal { opacity: 0; transform: translateY(40px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
+    .reveal.in { opacity: 1; transform: none; }
+    .reveal.d1 { transition-delay: .1s; } .reveal.d2 { transition-delay: .2s; }
+    .reveal.d3 { transition-delay: .3s; } .reveal.d4 { transition-delay: .4s; }
+
+    /* ---------- buttons & labels ---------- */
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 12px 22px; border: 1px solid var(--red);
+      font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      cursor: pointer; background: transparent; transition: background .25s, border-color .25s, transform .25s;
+    }
+    .btn svg { width: 15px; height: 15px; transition: transform .25s; }
+    .btn:hover svg { transform: translateX(4px); }
+    .btn-red { background: var(--red); }
+    .btn-red:hover { background: #ff2440; }
+    .btn-ghost { border-color: rgba(255,255,255,.35); background: rgba(0,0,0,.25); }
+    .btn-ghost:hover { border-color: #fff; }
+    .btn-outline { color: var(--red); }
+    .btn-outline:hover { background: rgba(227,18,43,.12); }
+
+    .eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--red);
+    }
+    .sec-head { text-align: center; margin-bottom: 36px; }
+    .sec-head h2, .sec-title {
+      font-family: var(--body); font-weight: 700; font-size: clamp(24px, 3vw, 32px); line-height: 1.2; margin-top: 6px;
+    }
+    .dot { color: var(--red); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    section { padding: 70px 0; }
+
+    /* ---------- nav ---------- */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      transition: background .3s, border-color .3s;
+      border-bottom: 1px solid transparent;
+    }
+    .nav.scrolled { background: rgba(5,1,6,.78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: var(--line); }
+    .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 76px; gap: 20px; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo img { width: 44px; height: 44px; object-fit: contain; }
+    .logo b { display: block; font-family: var(--head); font-size: 19px; letter-spacing: .06em; line-height: 1; }
+    .logo small { display: block; font-size: 8.5px; letter-spacing: .25em; color: var(--muted); margin-top: 4px; }
+    .menu { display: flex; gap: 34px; list-style: none; }
+    .menu a {
+      font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      position: relative; padding: 8px 0; color: #ddd; transition: color .2s;
+    }
+    .menu a::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
+      background: var(--red); transform: scaleX(0); transition: transform .3s;
+    }
+    .menu a:hover, .menu a.active { color: var(--red); }
+    .menu a.active::after { transform: scaleX(1); }
+    .burger { display: none; background: none; border: 0; cursor: pointer; width: 40px; height: 40px; }
+    .burger span { display: block; height: 2px; background: #fff; margin: 6px 8px; transition: .3s; }
+
+    /* ---------- hero ---------- */
+    .hero { min-height: 100vh; display: flex; align-items: center; padding: 110px 0 60px; }
+    .hero .wrap { display: flex; justify-content: space-between; align-items: center; gap: 40px; }
+    .hero-text { max-width: 560px; }
+    .hero h1 {
+      font-family: var(--head); font-weight: 700; text-transform: uppercase;
+      font-size: clamp(44px, 6.6vw, 84px); line-height: 1.02; letter-spacing: .01em; margin: 14px 0 22px;
+    }
+    .hero h1 .r { color: var(--red); display: block; }
+    .hero p.lead { color: #d6ccd0; max-width: 470px; margin-bottom: 30px; }
+    .hero .ctas { display: flex; gap: 16px; flex-wrap: wrap; }
+    .follow { display: flex; align-items: center; gap: 22px; margin-top: 40px; }
+    .follow span { font-size: 10px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+    .socials { display: flex; gap: 18px; }
+    .socials a svg { width: 18px; height: 18px; fill: #eee; transition: fill .2s, transform .2s; }
+    .socials a:hover svg { fill: var(--red); transform: translateY(-2px); }
+
+    .hero-stats { display: flex; flex-direction: column; min-width: 190px; }
+    .hero-stats .s {
+      display: flex; align-items: center; gap: 14px; padding: 14px 6px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-stats .s:last-child { border-bottom: 0; }
+    .hero-stats svg { width: 24px; height: 24px; stroke: var(--red); fill: none; stroke-width: 1.7; flex: none; }
+    .hero-stats b { display: block; font-family: var(--head); font-size: 24px; line-height: 1; }
+    .hero-stats small { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+    .scroll-hint {
+      position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+      font-size: 10px; letter-spacing: .3em; color: var(--muted); text-transform: uppercase;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .scroll-hint i { width: 1px; height: 40px; background: linear-gradient(var(--red), transparent); animation: drip 1.8s infinite; }
+    @keyframes drip { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+
+    /* ---------- about ---------- */
+    .about .panel { display: grid; grid-template-columns: 1fr 1.25fr; gap: 50px; padding: 50px 60px; align-items: center; }
+    .about-mark { position: relative; padding-left: 26px; }
+    .about-mark::before { content: ''; position: absolute; left: 0; top: 10%; bottom: 10%; width: 6px; background: var(--red); }
+    .about-mark .big {
+      font-family: var(--head); font-size: clamp(60px, 8vw, 110px); line-height: .9; text-transform: uppercase;
+      color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,.35);
+    }
+    .about-mark .big span { color: var(--red); -webkit-text-stroke: 0; }
+    .about-logo { width: min(260px, 70%); height: auto; filter: drop-shadow(0 0 30px rgba(227,18,43,.35)); }
+    .about-mark .studio { font-family: var(--head); font-size: 28px; letter-spacing: .08em; text-transform: uppercase; margin-top: 18px; }
+    .about-mark .studio span { color: var(--red); }
+    .about-mark .sig { font-family: 'Brush Script MT', 'Segoe Script', cursive; color: var(--red); font-size: 34px; margin-top: 10px; transform: rotate(-4deg); display: inline-block; }
+    .about p { color: #cfc5ca; margin: 14px 0 26px; }
+    .info { display: flex; gap: 34px; flex-wrap: wrap; margin-bottom: 30px; }
+    .info div { display: flex; gap: 10px; align-items: flex-start; }
+    .info svg { width: 20px; height: 20px; stroke: var(--red); fill: none; stroke-width: 1.7; margin-top: 2px; flex: none; }
+    .info b { display: block; font-size: 13px; }
+    .info span { font-size: 13px; color: var(--muted); }
+
+    /* ---------- services ---------- */
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .svc {
+      padding: 30px 26px; border-top: 2px solid var(--red);
+      transition: transform .35s, border-color .35s, background .35s;
+    }
+    .svc:hover { transform: translateY(-8px); background: var(--panel-solid); }
+    .svc svg { width: 34px; height: 34px; stroke: var(--red); fill: none; stroke-width: 1.6; margin-bottom: 26px; }
+    .svc h3 { font-size: 16px; margin-bottom: 10px; }
+    .svc p { font-size: 13.5px; color: var(--muted); margin-bottom: 22px; }
+    .more { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--red); text-transform: uppercase; display: inline-flex; gap: 8px; align-items: center; }
+    .more svg { width: 13px; height: 13px; margin: 0; stroke-width: 2; }
+
+    /* ---------- skills ---------- */
+    .skills .wrap { display: grid; grid-template-columns: 1fr 1.35fr; gap: 40px; align-items: center; }
+    .skills .left { padding: 34px; }
+    .bar { display: grid; grid-template-columns: 120px 1fr 40px; align-items: center; gap: 14px; margin-top: 18px; font-size: 13px; }
+    .bar .t { height: 3px; background: rgba(255,255,255,.12); position: relative; overflow: hidden; }
+    .bar .t i { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--red-dark), var(--red)); transition: width 1.6s cubic-bezier(.2,.7,.2,1); }
+    .bar .p { color: var(--muted); text-align: right; }
+    .achv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .achv .a { text-align: center; padding: 34px 10px; transition: border-color .3s; }
+    .achv .a:hover { border-color: var(--line-red); }
+    .achv svg { width: 36px; height: 36px; stroke: var(--red); fill: none; stroke-width: 1.6; margin: 0 auto 18px; }
+    .achv b { display: block; font-family: var(--head); font-size: 34px; line-height: 1; }
+    .achv small { display: block; margin-top: 10px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+    /* ---------- projects ---------- */
+    .proj-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; gap: 20px; }
+    .proj { overflow: hidden; transition: transform .35s, border-color .35s; }
+    .proj:hover { transform: translateY(-8px); border-color: var(--line-red); }
+    .thumb { aspect-ratio: 16/10; position: relative; overflow: hidden; border-bottom: 1px solid var(--line); background: rgba(0,0,0,.25); }
+    .thumb .mock { position: absolute; inset: 14% 12%; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; background: rgba(255,255,255,.04); transition: transform .5s; }
+    .proj:hover .thumb .mock { transform: scale(1.06); }
+    .thumb .mock i { position: absolute; display: block; background: rgba(255,255,255,.14); border-radius: 2px; }
+    .thumb .mock i.r { background: var(--red); }
+    .thumb > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+    .proj:hover .thumb > img { transform: scale(1.06); }
+    .proj .meta { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; }
+    .proj h3 { font-size: 14.5px; }
+    .proj small { font-size: 12px; color: var(--muted); }
+    .proj .go { width: 30px; height: 30px; border: 1px solid var(--line-red); display: grid; place-items: center; transition: background .25s; flex: none; }
+    .proj .go svg { width: 13px; height: 13px; stroke: var(--red); fill: none; stroke-width: 2; }
+    .proj:hover .go { background: var(--red); }
+    .proj:hover .go svg { stroke: #fff; }
+
+    /* ---------- testimonials ---------- */
+    .tst-wrap { position: relative; }
+    .tst-viewport { overflow: hidden; }
+    .tst-track { display: flex; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+    .tst { flex: 0 0 calc((100% - 40px) / 3); margin-right: 20px; padding: 30px 28px; display: flex; flex-direction: column; }
+    .tst .q { font-family: Georgia, serif; font-size: 44px; line-height: .6; color: var(--red); height: 22px; }
+    .tst p { font-size: 13.5px; color: #cfc5ca; margin: 10px 0 26px; flex: 1; }
+    .who { display: flex; align-items: center; gap: 14px; }
+    .av { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: rgba(227,18,43,.18); border: 1px solid var(--line-red); color: #fff; flex: none; }
+    .who b { display: block; font-size: 13.5px; }
+    .who small { font-size: 12px; color: var(--muted); }
+    .arrow {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+      width: 42px; height: 42px; border-radius: 50%; border: 0; cursor: pointer;
+      background: rgba(161,12,31,.85); display: grid; place-items: center; transition: background .2s;
+    }
+    .arrow:hover { background: var(--red); }
+    .arrow svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2.2; }
+    .arrow.prev { left: -60px; } .arrow.next { right: -60px; }
+    .dots { display: flex; justify-content: center; gap: 12px; margin-top: 26px; }
+    .dots button { width: 7px; height: 7px; border-radius: 50%; border: 0; background: rgba(255,255,255,.45); cursor: pointer; transition: background .2s, transform .2s; }
+    .dots button.on { background: var(--red); transform: scale(1.3); }
+
+    /* ---------- contact ---------- */
+    .contact .panel { display: grid; grid-template-columns: 1fr 1.25fr; gap: 50px; padding: 50px 60px; }
+    .contact h2 { font-size: clamp(26px, 3.2vw, 36px); line-height: 1.2; margin: 8px 0 14px; }
+    .contact p { color: #cfc5ca; }
+    .contact-lines { margin-top: 28px; display: grid; gap: 14px; font-size: 13.5px; }
+    .contact-lines div { display: flex; gap: 12px; align-items: center; }
+    .contact-lines svg { width: 18px; height: 18px; stroke: var(--red); fill: none; stroke-width: 1.7; }
+    form.cf { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+    .cf input, .cf textarea {
+      width: 100%; background: rgba(0,0,0,.35); border: 1px solid var(--line); padding: 12px 14px; font-size: 13.5px; outline: none;
+      transition: border-color .2s;
+    }
+    .cf input:focus, .cf textarea:focus { border-color: var(--red); }
+    .cf .full { grid-column: 1 / -1; }
+    .cf textarea { min-height: 120px; resize: vertical; }
+    .cf .row { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .cf .note { font-size: 12.5px; color: var(--muted); }
+
+    /* ---------- footer ---------- */
+    footer { background: rgba(5,1,6,.88); border-top: 1px solid var(--line); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 54px 0 0; margin-top: 30px; }
+    .fgrid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr 1.4fr; gap: 30px; }
+    .fgrid p { font-size: 12.5px; color: var(--muted); margin: 16px 0 18px; max-width: 250px; }
+    .fgrid h4 { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 16px; }
+    .fgrid ul { list-style: none; display: grid; gap: 8px; }
+    .fgrid li, .fgrid li a { font-size: 12.5px; color: var(--muted); transition: color .2s; }
+    .fgrid li a:hover { color: var(--red); }
+    .fgrid li.ic { display: flex; gap: 10px; align-items: center; }
+    .fgrid li.ic svg { width: 15px; height: 15px; stroke: var(--red); fill: none; stroke-width: 1.8; flex: none; }
+    .news { display: flex; margin-top: 4px; }
+    .news input { flex: 1; min-width: 0; background: rgba(0,0,0,.35); border: 1px solid var(--line); border-right: 0; padding: 10px 12px; font-size: 12.5px; outline: none; }
+    .news input:focus { border-color: var(--red); }
+    .news button { width: 44px; border: 0; background: var(--red); cursor: pointer; display: grid; place-items: center; }
+    .news button svg { width: 15px; height: 15px; stroke: #fff; fill: none; stroke-width: 2; }
+    .copy { text-align: center; font-size: 11.5px; color: var(--muted); padding: 22px 0; margin-top: 40px; border-top: 1px solid var(--line); }
+
+    /* ---------- whatsapp ---------- */
+    .wa-ic { width: 16px; height: 16px; fill: currentColor; stroke: none !important; }
+    .btn-wa { margin-top: 26px; background: #25d366; border-color: #25d366; color: #fff; }
+    .btn-wa:hover { background: #1ebe5b; }
+    .btn-wa .wa-ic { width: 18px; height: 18px; }
+    .info .wa-line .wa-ic { width: 20px; height: 20px; fill: #25d366; margin-top: 2px; }
+    .contact-lines .wa-line .wa-ic { width: 18px; height: 18px; fill: #25d366; }
+    .contact-lines a:hover, .info a:hover, .fgrid li a:hover { color: var(--red); }
+    .fgrid li.wa-li .wa-ic { fill: #25d366; width: 15px; height: 15px; }
+    .wa-float {
+      position: fixed; right: 22px; bottom: 22px; z-index: 60;
+      width: 56px; height: 56px; border-radius: 50%; background: #25d366;
+      display: grid; place-items: center; color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,.45); transition: transform .25s;
+      animation: waPulse 2.4s infinite;
+    }
+    .wa-float:hover { transform: scale(1.08); }
+    .wa-float .wa-ic { width: 30px; height: 30px; }
+    @keyframes waPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(37,211,102,.5), 0 8px 24px rgba(0,0,0,.45); } 50% { box-shadow: 0 0 0 12px rgba(37,211,102,0), 0 8px 24px rgba(0,0,0,.45); } }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 1320px) {
+      .arrow.prev { left: -10px; } .arrow.next { right: -10px; }
+    }
+    @media (max-width: 1024px) {
+      .grid4, .achv { grid-template-columns: repeat(2, 1fr); }
+      .skills .wrap { grid-template-columns: 1fr; }
+      .tst { flex-basis: calc((100% - 20px) / 2); }
+      .fgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .fgrid > div:first-child { grid-column: 1 / -1; }
+    }
+    @media (max-width: 860px) {
+      .menu {
+        position: fixed; top: 76px; left: 0; right: 0; flex-direction: column; gap: 0;
+        background: rgba(5,1,6,.96); border-bottom: 1px solid var(--line);
+        max-height: 0; overflow: hidden; transition: max-height .35s;
+      }
+      .menu.open { max-height: 400px; }
+      .menu li a { display: block; padding: 14px 20px; }
+      .menu a::after { display: none; }
+      .burger { display: block; }
+      .nav .btn { display: none; }
+      .hero .wrap { flex-direction: column; align-items: flex-start; }
+      .hero-stats { flex-direction: row; flex-wrap: wrap; width: 100%; gap: 0; }
+      .hero-stats .s { flex: 1 1 50%; border-bottom: 0; }
+      .about .panel, .contact .panel { grid-template-columns: 1fr; padding: 34px 22px; gap: 30px; }
+      .scroll-hint { display: none; }
+    }
+    @media (max-width: 600px) {
+      section { padding: 50px 0; }
+      .grid4 { grid-template-columns: 1fr; }
+      .tst { flex-basis: 100%; margin-right: 20px; }
+      .arrow { display: none; }
+      form.cf { grid-template-columns: 1fr; }
+      .cf .row { flex-direction: column; align-items: flex-start; }
+      .fgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fgrid > div:last-child { grid-column: 1 / -1; }
+      .bar { grid-template-columns: 112px 1fr 36px; }
+      .proj-head { flex-direction: column; align-items: flex-start; }
+      .achv b { font-size: 28px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <!-- the scroll animation (frames from the "background image" folder) -->
+  <canvas id="animation-canvas"></canvas>
+  <div class="shade"></div>
+  <div id="msg"></div>
+
+  <!-- icon sprites -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"></path></symbol>
+    </defs>
+  </svg>
+
+  <!-- ================= NAV ================= -->
+  <header class="nav" id="nav">
+    <div class="wrap">
+      <a href="#home" class="logo">
+        <img src="logo.png" alt="SKG Creator Studio logo">
+        <div><b>SKG</b><small>CREATOR STUDIO</small></div>
+      </a>
+      <ul class="menu" id="menu">
+        <li><a href="#home" class="active">Home</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#testimonials">Testimonials</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a href="#contact" class="btn btn-outline">Let's Talk <svg><use href="#i-arrow"></use></svg></a>
+      <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= HERO ================= -->
+    <section class="hero" id="home">
+      <div class="wrap">
+        <div class="hero-text">
+          <div class="eyebrow reveal">Welcome to SKG Creator Studio</div>
+          <h1 class="reveal d1">We Design. We Edit.<span class="r">We Create Impact.</span></h1>
+          <p class="lead reveal d2">A creative studio crafting scroll-stopping videos, eye-catching graphics and AI-powered ads that grow your brand.</p>
+          <div class="ctas reveal d3">
+            <a href="#projects" class="btn btn-red">View Our Work <svg><use href="#i-arrow"></use></svg></a>
+            <a href="https://wa.me/94752993332" target="_blank" rel="noopener" class="btn btn-ghost">WhatsApp Us <svg viewBox="0 0 24 24" class="wa-ic"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"></path></svg></a>
+          </div>
+          <div class="follow reveal d4">
+            <span>Follow us</span>
+            <div class="socials">
+              <a href="#" aria-label="LinkedIn"><svg viewBox="0 0 24 24"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.5h4V21H3zM9.5 9.5h3.8v1.6h.06c.53-1 1.83-2.06 3.77-2.06 4.03 0 4.77 2.65 4.77 6.1V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.7V21h-4z"></path></svg></a>
+              <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"></path></svg></a>
+              <a href="#" aria-label="Twitter"><svg viewBox="0 0 24 24"><path d="M22 5.8c-.7.3-1.5.5-2.4.6.9-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4.1 4.1 0 0 0-7 3.7A11.6 11.6 0 0 1 3.4 4.6a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5 0 2 1.4 3.7 3.3 4.1-.6.2-1.2.2-1.9.1.5 1.6 2 2.8 3.8 2.9A8.3 8.3 0 0 1 2 18.4 11.7 11.7 0 0 0 8.3 20c7.5 0 11.7-6.2 11.7-11.7v-.5c.8-.6 1.5-1.3 2-2z"></path></svg></a>
+              <a href="#" aria-label="Dribbble"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.6 4.6a8.5 8.5 0 0 1 1.9 5.3c-.3-.1-3.1-.6-6-.3l-.2-.5-.6-1.3c3.2-1.3 4.7-3.1 4.9-3.2zM12 3.5c2.2 0 4.2.8 5.6 2.2-.1.2-1.5 1.9-4.6 3.1A47 47 0 0 0 9.6 3.9c.8-.3 1.6-.4 2.4-.4zm-4 1a56 56 0 0 1 3.3 5.2c-4.2 1.1-7.9 1.1-8.3 1.1A8.6 8.6 0 0 1 8 4.5zM3.5 12v-.3c.4 0 4.8.1 9.3-1.3l.7 1.5-.3.1c-4.7 1.5-7.2 5.6-7.4 6A8.5 8.5 0 0 1 3.5 12zm8.5 8.5c-1.9 0-3.7-.7-5.1-1.7.2-.3 2-3.8 7-5.6h.1c1.2 3.2 1.7 5.9 1.9 6.6-1.2.5-2.5.7-3.9.7zm5.4-1.6c-.1-.5-.5-3.1-1.7-6.3 2.7-.4 5.1.3 5.4.4a8.5 8.5 0 0 1-3.7 5.9z"></path></svg></a>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-stats panel reveal d2" style="padding: 6px 18px;">
+          <div class="s"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg><div><b class="count" data-to="6">0</b><small>Years Experience</small></div></div>
+          <div class="s"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 3 3 5-6"></path></svg><div><b class="count" data-to="50">0</b><small>Projects Completed</small></div></div>
+          <div class="s"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.5-3.5 3.2-5.5 6.5-5.5s6 2 6.5 5.5"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M17 14c2.5 0 4.2 1.6 4.5 4.5"></path></svg><div><b class="count" data-to="30">0</b><small>Happy Clients</small></div></div>
+          <div class="s"><svg viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"></path><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"></path></svg><div><b class="count" data-to="10">0</b><small>Awards Won</small></div></div>
+        </div>
+      </div>
+      <div class="scroll-hint">Scroll<i></i></div>
+    </section>
+
+    <!-- ================= ABOUT ================= -->
+    <section class="about" id="about">
+      <div class="wrap">
+        <div class="panel reveal">
+          <div class="about-mark">
+            <img class="about-logo" src="logo.png" alt="SKG Creator Studio">
+            <div class="studio">SKG <span>Creator Studio</span></div>
+          </div>
+          <div>
+            <div class="eyebrow">About us</div>
+            <h2 class="sec-title">Creating Content That<br>Moves People &amp; Brands<span class="dot">.</span></h2>
+            <p>SKG Creator Studio is a creative studio focused on video editing, graphic design and AI-powered advertising. We turn your ideas into content that grabs attention, tells your story and brings real results for your business.</p>
+            <div class="info">
+              <div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c.6-4 4-6 8-6s7.4 2 8 6"></path></svg><div><b>Studio:</b><span>SKG Creator Studio</span></div></div>
+              <div><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg><div><b>Email:</b><span><a href="mailto:SKGCreatorStudio@gmail.com">SKGCreatorStudio@gmail.com</a></span></div></div>
+              <div><span class="wa-line"><svg viewBox="0 0 24 24" class="wa-ic"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"></path></svg></span><div><b>WhatsApp:</b><span><a href="https://wa.me/94752993332" target="_blank" rel="noopener">075 299 3332</a></span></div></div>
+              <div><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg><div><b>Location:</b><span>Colombo, Sri Lanka</span></div></div>
+            </div>
+            <a href="#contact" class="btn btn-outline">Work With Us <svg><use href="#i-arrow"></use></svg></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SERVICES ================= -->
+    <section id="services">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="eyebrow">What we do</div>
+          <h2>Services That Drive Success</h2>
+        </div>
+        <div class="grid4">
+          <div class="svc panel reveal d1">
+            <svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="14" height="14" rx="2"></rect><path d="m16.5 10 5-3v10l-5-3"></path><path d="m8 9.5 4 2.5-4 2.5z"></path></svg>
+            <h3>Video Editing</h3>
+            <p>Reels, promo videos and YouTube edits with smooth cuts, motion graphics and sound that keep viewers watching.</p>
+            <a href="#contact" class="more">Learn more <svg><use href="#i-arrow"></use></svg></a>
+          </div>
+          <div class="svc panel reveal d2">
+            <svg viewBox="0 0 24 24"><path d="M12 3 7 10l5 11 5-11z"></path><path d="M7 10h10M12 3v18"></path></svg>
+            <h3>Graphic Design</h3>
+            <p>Social media posts, banners, flyers and thumbnails that look professional and stop the scroll.</p>
+            <a href="#contact" class="more">Learn more <svg><use href="#i-arrow"></use></svg></a>
+          </div>
+          <div class="svc panel reveal d3">
+            <svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>
+            <h3>AI Ads Creation</h3>
+            <p>Eye-catching ads made with the latest AI tools for Facebook, Instagram and TikTok, ready to run.</p>
+            <a href="#contact" class="more">Learn more <svg><use href="#i-arrow"></use></svg></a>
+          </div>
+          <div class="svc panel reveal d4">
+            <svg viewBox="0 0 24 24"><path d="M14 4c3-1.5 6-1 6-1s.5 3-1 6l-6 6-4-4z"></path><path d="M9 11 5.5 11 3 13.5l4 1M13 15v3.5L10.5 21l-1-4M6 18c-1 1-1.5 3-1.5 3s2-.5 3-1.5"></path><circle cx="15.5" cy="8.5" r="1.3"></circle></svg>
+            <h3>Branding &amp; Identity</h3>
+            <p>Creating memorable brand identities that communicate your value and stand out from the crowd.</p>
+            <a href="#contact" class="more">Learn more <svg><use href="#i-arrow"></use></svg></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SKILLS ================= -->
+    <section class="skills" id="skills">
+      <div class="wrap">
+        <div class="left panel reveal">
+          <div class="eyebrow">Our expertise</div>
+          <h2 class="sec-title">Skills &amp; Achievements</h2>
+          <div class="bar"><span>Video Editing</span><div class="t"><i data-w="75"></i></div><span class="p">75%</span></div>
+          <div class="bar"><span>Graphic Design</span><div class="t"><i data-w="81"></i></div><span class="p">81%</span></div>
+          <div class="bar"><span>AI Ads Creation</span><div class="t"><i data-w="80"></i></div><span class="p">80%</span></div>
+        </div>
+        <div class="achv">
+          <div class="a panel reveal d1"><svg viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"></path></svg><b><span class="count" data-to="6">0</span>+</b><small>Years<br>Experience</small></div>
+          <div class="a panel reveal d2"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="m10 9 5 3-5 3z"></path></svg><b><span class="count" data-to="50">0</span>+</b><small>Projects<br>Completed</small></div>
+          <div class="a panel reveal d3"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"></path><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6" stroke-linecap="round"></path></svg><b><span class="count" data-to="30">0</span>+</b><small>Happy<br>Clients</small></div>
+          <div class="a panel reveal d4"><svg viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0z"></path><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"></path></svg><b><span class="count" data-to="10">0</span>+</b><small>Awards<br>Won</small></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PROJECTS ================= -->
+    <section id="projects">
+      <div class="wrap">
+        <div class="proj-head reveal">
+          <div><div class="eyebrow">Portfolio</div><h2 class="sec-title">Featured Projects</h2></div>
+          <a href="projects.html" target="_blank" rel="noopener" class="more">View all projects <svg><use href="#i-arrow"></use></svg></a>
+        </div>
+        <!-- cards come from projects.js (edit them in dev.html > Projects) -->
+        <div class="grid4" id="projGrid"></div>
+        <script src="projects.js"></script>
+        <script src="projects-view.js"></script>
+        <script>SKG_renderProjects(document.getElementById('projGrid'), { featured: true, limit: 4, reveal: true });</script>
+      </div>
+    </section>
+
+    <!-- ================= TESTIMONIALS ================= -->
+    <section id="testimonials">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="eyebrow">Testimonials</div>
+          <h2>What Clients Say</h2>
+        </div>
+        <div class="tst-wrap reveal d1">
+          <button class="arrow prev" id="tPrev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"></path></svg></button>
+          <div class="tst-viewport">
+            <div class="tst-track" id="tTrack">
+              <div class="tst panel"><div class="q">“</div><p>SKG Creator Studio delivered our project ahead of schedule with outstanding quality. Their attention to detail is unmatched.</p><div class="who"><div class="av">RS</div><div><b>Rohit Sharma</b><small>CEO, FinBiz Solutions</small></div></div></div>
+              <div class="tst panel"><div class="q">“</div><p>Working with SKG Creator Studio was a game-changer. They understood our vision perfectly and created a beautiful product.</p><div class="who"><div class="av">PM</div><div><b>Priya Mehta</b><small>Founder, TrendyCart</small></div></div></div>
+              <div class="tst panel"><div class="q">“</div><p>Highly professional, creative, and reliable. SKG goes above and beyond to ensure client satisfaction.</p><div class="who"><div class="av">AV</div><div><b>Arjun Verma</b><small>Marketing Head, Brandify</small></div></div></div>
+              <div class="tst panel"><div class="q">“</div><p>From the first call to launch day, communication was clear and the result exceeded what we imagined.</p><div class="who"><div class="av">NP</div><div><b>Nimal Perera</b><small>Director, Lanka Tours</small></div></div></div>
+            </div>
+          </div>
+          <button class="arrow next" id="tNext" aria-label="Next"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"></path></svg></button>
+          <div class="dots" id="tDots"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CONTACT ================= -->
+    <section class="contact" id="contact">
+      <div class="wrap">
+        <div class="panel reveal">
+          <div>
+            <div class="eyebrow">Get in touch</div>
+            <h2>Let's Build Something<br>Amazing Together<span class="dot">.</span></h2>
+            <p>Have a project in mind or just want to say hello? We'd love to hear from you.</p>
+            <div class="contact-lines">
+              <div><span class="wa-line"><svg viewBox="0 0 24 24" class="wa-ic"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"></path></svg></span><a href="https://wa.me/94752993332" target="_blank" rel="noopener">WhatsApp: 075 299 3332</a></div>
+              <div><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg><a href="mailto:SKGCreatorStudio@gmail.com">SKGCreatorStudio@gmail.com</a></div>
+              <div><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>Colombo, Sri Lanka</div>
+            </div>
+            <a href="https://wa.me/94752993332" target="_blank" rel="noopener" class="btn btn-wa">Chat on WhatsApp <svg viewBox="0 0 24 24" class="wa-ic"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"></path></svg></a>
+          </div>
+          <form class="cf" id="contactForm">
+            <input type="text" name="name" placeholder="Your Name" required="">
+            <input type="text" name="email" placeholder="Your Email or WhatsApp No." required="">
+            <input class="full" type="text" name="subject" placeholder="Subject">
+            <textarea class="full" name="message" placeholder="Your Message" required=""></textarea>
+            <div class="row">
+              <span class="note" id="formNote"></span>
+              <button type="submit" class="btn btn-red" id="sendBtn">Send Message <svg viewBox="0 0 24 24" class="wa-ic"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"></path></svg></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div class="wrap fgrid">
+      <div>
+        <a href="#home" class="logo">
+          <img src="logo.png" alt="SKG Creator Studio logo">
+          <div><b>SKG</b><small>CREATOR STUDIO</small></div>
+        </a>
+        <p>Crafting digital experiences that are beautiful, functional, and impactful. Let's create something extraordinary.</p>
+        <div class="socials">
+          <a href="#" aria-label="LinkedIn"><svg viewBox="0 0 24 24"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.5h4V21H3zM9.5 9.5h3.8v1.6h.06c.53-1 1.83-2.06 3.77-2.06 4.03 0 4.77 2.65 4.77 6.1V21h-4v-5.1c0-1.22-.02-2.78-1.7-2.78-1.7 0-1.96 1.33-1.96 2.7V21h-4z"></path></svg></a>
+          <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"></path></svg></a>
+          <a href="#" aria-label="Twitter"><svg viewBox="0 0 24 24"><path d="M22 5.8c-.7.3-1.5.5-2.4.6.9-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1a4.1 4.1 0 0 0-7 3.7A11.6 11.6 0 0 1 3.4 4.6a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5 0 2 1.4 3.7 3.3 4.1-.6.2-1.2.2-1.9.1.5 1.6 2 2.8 3.8 2.9A8.3 8.3 0 0 1 2 18.4 11.7 11.7 0 0 0 8.3 20c7.5 0 11.7-6.2 11.7-11.7v-.5c.8-.6 1.5-1.3 2-2z"></path></svg></a>
+        </div>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <ul><li><a href="#home">Home</a></li><li><a href="#about">About</a></li><li><a href="#services">Services</a></li><li><a href="#projects">Projects</a></li><li><a href="#testimonials">Testimonials</a></li><li><a href="#contact">Contact</a></li></ul>
+      </div>
+      <div>
+        <h4>Services</h4>
+        <ul><li>Video Editing</li><li>Graphic Design</li><li>AI Ads Creation</li><li>Branding &amp; Identity</li></ul>
+      </div>
+      <div>
+        <h4>Contact Info</h4>
+        <ul>
+          <li class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>Colombo, Sri Lanka</li>
+          <li class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg><a href="mailto:SKGCreatorStudio@gmail.com">SKGCreatorStudio@gmail.com</a></li>
+          <li class="ic wa-li"><svg viewBox="0 0 24 24" class="wa-ic"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"></path></svg><a href="https://wa.me/94752993332" target="_blank" rel="noopener">WhatsApp: 075 299 3332</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Newsletter</h4>
+        <p style="margin-top:0">S1tay updated with our latest projects and offers.</p>
+        <form class="news" id="newsForm">
+          <input type="email" placeholder="Enter your email" required="">
+          <button type="submit" aria-label="Subscribe"><svg viewBox="0 0 24 24"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"></path></svg></button>
+        </form>
+      </div>
+    </div>
+    <div class="copy">© <span id="yr"></span> SKG Creator Studio. All Rights Reserved.</div>
+  </footer>
+
+  <a href="https://wa.me/94752993332" target="_blank" rel="noopener" class="wa-float" aria-label="Chat on WhatsApp"><svg viewBox="0 0 24 24" class="wa-ic"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"></path></svg></a>
+
+  <script src="frames.js"></script>
+  <script>
+    /* =================================================================
+       SCROLL ANIMATION
+       Frames come from the "background image" folder (same as before).
+       The page now scrolls normally; scroll position drives the frames.
+       ================================================================= */
+    (function () {
+      const IMG_FOLDER = 'background image';
+      const LIST_URL = '/api/images';
+      const POLL_MS = 2000;
+
+      const canvas = document.getElementById('animation-canvas');
+      const ctx = canvas.getContext('2d', { alpha: false });
+      const msg = document.getElementById('msg');
+      const root = document.documentElement;
+
+      let FRAME_COUNT = 0;
+      let images = [];
+      let signature = '';
+      let apiAvailable = true;
+
+      let targetP = 0;
+      let currentP = 0;
+      let lastRenderedFloat = -1;
+      let needRedraw = true;
+
+      function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+      function showMessage(text) {
+        msg.textContent = text || '';
+        msg.style.display = text ? 'flex' : 'none';
+      }
+
+      function srcFor(item) {
+        return encodeURIComponent(IMG_FOLDER) + '/' + encodeURIComponent(item.name) +
+               (item.v ? '?v=' + encodeURIComponent(item.v) : '');
+      }
+
+      async function fetchListFromServer() {
+        const r = await fetch(LIST_URL, { cache: 'no-store' });
+        if (!r.ok) throw new Error('no api');
+        return await r.json();
+      }
+
+      const IMG_RE = /\.(jpe?g|png|webp|gif|avif|bmp)$/i;
+      function naturalKey(name) {
+        return name.toLowerCase().replace(/\d+/g, function (d) { return d.padStart(20, '0'); });
+      }
+      function sortNatural(list) {
+        return list.sort(function (a, b) {
+          const ka = naturalKey(a.name), kb = naturalKey(b.name);
+          return ka < kb ? -1 : ka > kb ? 1 : 0;
+        });
+      }
+
+      async function listFromDirectoryPage() {
+        const r = await fetch(encodeURIComponent(IMG_FOLDER) + '/', { cache: 'no-store' });
+        if (!r.ok) return [];
+        const html = await r.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const seen = {};
+        const list = [];
+        doc.querySelectorAll('a[href]').forEach(function (a) {
+          let href = a.getAttribute('href').split('?')[0].split('#')[0];
+          let name = decodeURIComponent(href.split('/').filter(Boolean).pop() || '');
+          if (IMG_RE.test(name) && !seen[name]) { seen[name] = true; list.push({ name: name, v: '' }); }
+        });
+        return sortNatural(list);
+      }
+
+      function probe(src) {
+        return new Promise(function (resolve) {
+          const im = new Image();
+          im.onload = function () { resolve(true); };
+          im.onerror = function () { resolve(false); };
+          im.src = src;
+        });
+      }
+      const PREFIXES = ['', 'sl', 'ezgif-frame-', 'frame', 'frame-', 'frame_', 'Frame', 'Frame-',
+                        'img', 'img-', 'img_', 'IMG_', 'image', 'image-', 'image_', 'sl_', 'sl-',
+                        'out', 'out-', 'output_', 'scene', 'scene-', 'render', 'seq', 'shot', 'pic'];
+      const PADS = [1, 2, 3, 4, 5, 6];
+      const EXTS = ['jpg', 'png', 'webp', 'jpeg'];
+      let knownPattern = null;
+
+      function makeName(p, n) { return p.prefix + String(n).padStart(p.pad, '0') + '.' + p.ext; }
+      function dirUrl(name, bust) {
+        return encodeURIComponent(IMG_FOLDER) + '/' + encodeURIComponent(name) + (bust ? '?t=' + bust : '');
+      }
+
+      async function detectPattern(stamp) {
+        const candidates = [];
+        for (const start of [1, 0])
+          for (const ext of EXTS)
+            for (const prefix of PREFIXES)
+              for (const pad of PADS)
+                candidates.push({ prefix: prefix, pad: pad, ext: ext, start: start });
+        const BATCH = 60;
+        for (let i = 0; i < candidates.length; i += BATCH) {
+          const part = candidates.slice(i, i + BATCH);
+          const ok = await Promise.all(part.map(function (c) { return probe(dirUrl(makeName(c, c.start), stamp)); }));
+          const hit = ok.indexOf(true);
+          if (hit !== -1) return part[hit];
+        }
+        const COMMON = [];
+        ['png', 'jpg', 'webp', 'jpeg'].forEach(function (ext) {
+          [['sl', 5], ['', 1], ['', 3], ['', 4], ['', 5], ['ezgif-frame-', 3],
+           ['frame_', 4], ['frame', 4], ['frame-', 3], ['img', 4], ['IMG_', 4], ['image', 4]]
+            .forEach(function (pp) { COMMON.push({ prefix: pp[0], pad: pp[1], ext: ext }); });
+        });
+        for (let from = 2; from <= 2000; from += 20) {
+          const tests = [];
+          COMMON.forEach(function (c) {
+            for (let n = from; n < from + 20; n++) tests.push({ prefix: c.prefix, pad: c.pad, ext: c.ext, start: n });
+          });
+          for (let i = 0; i < tests.length; i += 240) {
+            const part = tests.slice(i, i + 240);
+            const ok = await Promise.all(part.map(function (c) { return probe(dirUrl(makeName(c, c.start), stamp)); }));
+            let best = null;
+            ok.forEach(function (v, k) { if (v && (!best || part[k].start < best.start)) best = part[k]; });
+            if (best) {
+              while (best.start > 0 && await probe(dirUrl(makeName(best, best.start - 1), stamp))) best.start--;
+              return best;
+            }
+          }
+        }
+        return null;
+      }
+
+      async function probeSequential() {
+        const stamp = Date.now();
+        if (knownPattern && !(await probe(dirUrl(makeName(knownPattern, knownPattern.start), stamp)))) knownPattern = null;
+        if (!knownPattern) knownPattern = await detectPattern(stamp);
+        if (!knownPattern) return [];
+        const list = [];
+        const CHUNK = 25;
+        let n = knownPattern.start;
+        while (n < knownPattern.start + 10000) {
+          const nums = [];
+          for (let k = 0; k < CHUNK; k++) nums.push(n + k);
+          const ok = await Promise.all(nums.map(function (m) { return probe(dirUrl(makeName(knownPattern, m), stamp)); }));
+          let stop = false;
+          for (let k = 0; k < ok.length; k++) {
+            if (!ok[k]) { stop = true; break; }
+            list.push({ name: makeName(knownPattern, nums[k]), v: '' });
+          }
+          if (stop) break;
+          n += CHUNK;
+        }
+        return list;
+      }
+
+      // frames.js (window.SKG_FRAMES) lists the frames when there is no serve.ps1, e.g. on the
+      // hosting. Then the list is fixed, so the folder is not searched or re-checked.
+      let usingFrameList = false;
+
+      async function getList() {
+        if (apiAvailable) {
+          try { return await fetchListFromServer(); }
+          catch (e) { apiAvailable = false; }
+        }
+        if (window.SKG_FRAMES && window.SKG_FRAMES.length) {
+          usingFrameList = true;
+          return window.SKG_FRAMES.map(function (name) { return { name: name, v: '' }; });
+        }
+        try {
+          const fromDir = await listFromDirectoryPage();
+          if (fromDir.length) return fromDir;
+        } catch (e) {}
+        return await probeSequential();
+      }
+
+      function applyList(list) {
+        const sig = list.map(function (it) { return it.name + '|' + it.v; }).join('\n');
+        if (sig === signature) return;
+        signature = sig;
+        const old = {};
+        images.forEach(function (im) { if (im) old[im.dataset.src] = im; });
+        FRAME_COUNT = list.length;
+        images = new Array(FRAME_COUNT);
+        if (FRAME_COUNT === 0) {
+          showMessage('"' + IMG_FOLDER + '" folder eke images naha. Images danna.');
+          ctx.fillStyle = '#050106';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          return;
+        }
+        showMessage('');
+        list.forEach(function (item, i) {
+          const src = srcFor(item);
+          if (old[src]) { images[i] = old[src]; return; }
+          const img = new Image();
+          img.decoding = 'async';
+          img.dataset.src = src;
+          img.onload = function () { needRedraw = true; };
+          img.src = src;
+          images[i] = img;
+        });
+        needRedraw = true;
+      }
+
+      async function refresh() {
+        try { applyList(await getList()); }
+        catch (e) { console.error(e); }
+      }
+
+      function resizeCanvas() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(window.innerWidth * dpr);
+        canvas.height = Math.round(window.innerHeight * dpr);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        needRedraw = true;
+        updateTarget();
+      }
+
+      function isReady(img) { return img && img.complete && img.naturalWidth > 0; }
+
+      function getActiveImage(t) {
+        if (isReady(images[t])) return images[t];
+        for (let o = 1; o < FRAME_COUNT; o++) {
+          if (t - o >= 0 && isReady(images[t - o])) return images[t - o];
+          if (t + o < FRAME_COUNT && isReady(images[t + o])) return images[t + o];
+        }
+        return null;
+      }
+
+      // On tall phone screens a full "cover" crop zooms right into the hair, so there the
+      // frame is drawn smaller (55% of the screen height), centred a little left of middle
+      // where the face is in the side-on frames, and its edges fade into the page.
+      function isPortrait() { return canvas.width / canvas.height < 0.9; }
+
+      function coverRect(img) {
+        const cw = canvas.width, ch = canvas.height;
+        const iw = img.naturalWidth, ih = img.naturalHeight;
+        if (!isPortrait()) {
+          const s = Math.max(cw / iw, ch / ih);
+          const w = Math.ceil(iw * s), h = Math.ceil(ih * s);
+          return { x: Math.floor((cw - w) * 0.5), y: Math.floor((ch - h) * 0.5), w: w, h: h };
+        }
+        const s = Math.max(cw / iw, (ch * 0.55) / ih);
+        const w = Math.ceil(iw * s), h = Math.ceil(ih * s);
+        const x = clamp(Math.floor(cw * 0.5 - w * 0.45), cw - w, 0);
+        return { x: x, y: Math.floor((ch - h) * 0.4), w: w, h: h };
+      }
+
+      function drawCover(img, alpha) {
+        const r = coverRect(img);
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(img, r.x, r.y, r.w, r.h);
+        ctx.globalAlpha = 1;
+      }
+
+      function fadeEdges(img) {
+        if (!isPortrait()) return;
+        const r = coverRect(img), band = r.h * 0.18;
+        const top = ctx.createLinearGradient(0, r.y, 0, r.y + band);
+        top.addColorStop(0, '#050106'); top.addColorStop(1, 'rgba(5,1,6,0)');
+        ctx.fillStyle = top;
+        ctx.fillRect(0, r.y, canvas.width, band);
+        const bottom = ctx.createLinearGradient(0, r.y + r.h - band, 0, r.y + r.h);
+        bottom.addColorStop(0, 'rgba(5,1,6,0)'); bottom.addColorStop(1, '#050106');
+        ctx.fillStyle = bottom;
+        ctx.fillRect(0, r.y + r.h - band, canvas.width, band);
+      }
+
+      function renderFrameBlend(f) {
+        if (FRAME_COUNT === 0) return;
+        const a = clamp(Math.floor(f), 0, FRAME_COUNT - 1);
+        const b = clamp(Math.ceil(f), 0, FRAME_COUNT - 1);
+        const frac = f - a;
+        const imgA = getActiveImage(a);
+        if (!imgA) return;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.fillStyle = '#050106';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        drawCover(imgA, 1);
+        if (frac > 0.02 && b !== a) {
+          const imgB = getActiveImage(b);
+          if (imgB) drawCover(imgB, frac);
+        }
+        fadeEdges(imgA);
+      }
+
+      // ---- page scroll -> animation progress ----
+      function updateTarget() {
+        const max = root.scrollHeight - window.innerHeight;
+        targetP = max > 0 ? clamp(window.scrollY / max, 0, 1) : 0;
+        // first screen stays bright, the rest of the page is a little darker for reading
+        const heroH = window.innerHeight * 0.8;
+        root.style.setProperty('--dim', (0.12 + 0.4 * clamp(window.scrollY / heroH, 0, 1)).toFixed(3));
+      }
+
+      function animate() {
+        currentP += (targetP - currentP) * 0.12;
+        if (Math.abs(targetP - currentP) < 0.00002) currentP = targetP;
+        const f = currentP * Math.max(FRAME_COUNT - 1, 0);
+        if (Math.abs(f - lastRenderedFloat) > 0.01 || needRedraw) {
+          renderFrameBlend(f);
+          lastRenderedFloat = f;
+          needRedraw = false;
+        }
+        requestAnimationFrame(animate);
+      }
+
+      window.addEventListener('scroll', updateTarget, { passive: true });
+      window.addEventListener('resize', resizeCanvas);
+
+      resizeCanvas();
+      refresh().then(function () {
+        if (usingFrameList) return;
+        setInterval(function () { if (!document.hidden) refresh(); }, apiAvailable ? POLL_MS : 5000);
+      });
+      requestAnimationFrame(animate);
+    })();
+
+    /* =================================================================
+       PAGE INTERACTIONS
+       ================================================================= */
+    (function () {
+      document.getElementById('yr').textContent = new Date().getFullYear();
+
+      // nav background + active link
+      const nav = document.getElementById('nav');
+      const links = Array.from(document.querySelectorAll('.menu a'));
+      const ids = links.map(function (a) { return a.getAttribute('href').slice(1); });
+      function onScroll() {
+        nav.classList.toggle('scrolled', window.scrollY > 40);
+        let current = ids[0];
+        ids.forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el && el.getBoundingClientRect().top < window.innerHeight * 0.4) current = id;
+        });
+        links.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+
+      // mobile menu
+      const menu = document.getElementById('menu');
+      document.getElementById('burger').addEventListener('click', function () { menu.classList.toggle('open'); });
+      links.forEach(function (a) { a.addEventListener('click', function () { menu.classList.remove('open'); }); });
+
+      // counters
+      function countUp(el) {
+        const to = +el.dataset.to, dur = 1400, t0 = performance.now();
+        const plus = el.tagName === 'B';
+        (function step(t) {
+          const p = Math.min((t - t0) / dur, 1);
+          el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))) + (plus ? '+' : '');
+          if (p < 1) requestAnimationFrame(step);
+        })(t0);
+      }
+
+      // reveal on scroll
+      const io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          const el = e.target;
+          el.classList.add('in');
+          el.querySelectorAll('.count').forEach(countUp);
+          el.querySelectorAll('.bar i').forEach(function (i) { i.style.width = i.dataset.w + '%'; });
+          io.unobserve(el);
+        });
+      }, { threshold: 0.15 });
+      document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+      // testimonials slider
+      const track = document.getElementById('tTrack');
+      const cards = track.children;
+      const dotsBox = document.getElementById('tDots');
+      let idx = 0;
+      function perView() { return window.innerWidth <= 600 ? 1 : window.innerWidth <= 1024 ? 2 : 3; }
+      function maxIdx() { return Math.max(cards.length - perView(), 0); }
+      function buildDots() {
+        dotsBox.innerHTML = '';
+        for (let i = 0; i <= maxIdx(); i++) {
+          const b = document.createElement('button');
+          b.setAttribute('aria-label', 'Slide ' + (i + 1));
+          b.addEventListener('click', function () { go(i); });
+          dotsBox.appendChild(b);
+        }
+      }
+      function go(i) {
+        const m = maxIdx();
+        idx = i < 0 ? m : i > m ? 0 : i;
+        const step = cards[0].getBoundingClientRect().width + 20;
+        track.style.transform = 'translateX(' + (-idx * step) + 'px)';
+        Array.from(dotsBox.children).forEach(function (d, k) { d.classList.toggle('on', k === idx); });
+      }
+      document.getElementById('tPrev').addEventListener('click', function () { go(idx - 1); });
+      document.getElementById('tNext').addEventListener('click', function () { go(idx + 1); });
+      let auto = setInterval(function () { go(idx + 1); }, 5000);
+      track.parentElement.addEventListener('mouseenter', function () { clearInterval(auto); });
+      track.parentElement.addEventListener('mouseleave', function () { auto = setInterval(function () { go(idx + 1); }, 5000); });
+      window.addEventListener('resize', function () { buildDots(); go(Math.min(idx, maxIdx())); });
+      buildDots(); go(0);
+
+      // =========================================================
+      //  CONTACT FORM SETTINGS
+      //  1) Every message is emailed to OWNER_EMAIL (FormSubmit).
+      //     The very first message sends an activation email to that
+      //     inbox - open it and click "Activate Form" once.
+      //  2) To ALSO get every message straight on WhatsApp, paste your
+      //     free CallMeBot key below (see setup steps from Claude).
+      //  3) To get every message in a Discord channel, paste the
+      //     channel's Webhook URL below.
+      // =========================================================
+      const OWNER_EMAIL = 'SKGCreatorStudio@gmail.com';
+      const OWNER_WHATSAPP = '+94752993332';
+      const CALLMEBOT_APIKEY = '';   // e.g. '1234567'
+      const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1567234873511510066/bgpPFQRZVSsLmRsahQH3pMWYcz2PU62sFHGXOw_DPAFTtxqazR9LM_3nGmFld2tV1NUi';   // e.g. 'https://discord.com/api/webhooks/....'
+      const DISCORD_USER_ID = '1073169740484317184';   // you get pinged (@samod.) for every message
+
+      const form = document.getElementById('contactForm');
+      const note = document.getElementById('formNote');
+      const btn = document.getElementById('sendBtn');
+      const btnHTML = btn.innerHTML;
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const f = e.target;
+        const data = {
+          name: f.name.value.trim(),
+          contact: f.email.value.trim(),
+          subject: f.subject.value.trim(),
+          message: f.message.value.trim()
+        };
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        note.style.color = '';
+        note.textContent = '';
+
+        const waText = 'New website message - SKG Creator Studio\n\nName: ' + data.name +
+                       '\nContact: ' + data.contact +
+                       (data.subject ? '\nSubject: ' + data.subject : '') +
+                       '\n\n' + data.message;
+        let sent = false;
+
+        // Open WhatsApp with the message ready - visitor just taps Send.
+        // Opened before any await so the browser doesn't block the popup.
+        window.open('https://wa.me/' + OWNER_WHATSAPP.replace('+', '') +
+                    '?text=' + encodeURIComponent(waText), '_blank', 'noopener');
+
+        // WhatsApp (straight to your phone, no clicks needed)
+        if (CALLMEBOT_APIKEY) {
+          try {
+            await fetch('https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(OWNER_WHATSAPP) +
+                        '&text=' + encodeURIComponent(waText) + '&apikey=' + encodeURIComponent(CALLMEBOT_APIKEY),
+                        { mode: 'no-cors' });
+            sent = true;
+          } catch (err) { console.error(err); }
+        }
+
+        // Discord
+        if (DISCORD_WEBHOOK_URL) {
+          try {
+            const cut = function (t, n) { return (t || '-').slice(0, n); };
+            const dres = await fetch(DISCORD_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: 'SKG Website',
+                content: DISCORD_USER_ID ? '<@' + DISCORD_USER_ID + '> New message from your website!' : '',
+                allowed_mentions: { parse: [], users: DISCORD_USER_ID ? [DISCORD_USER_ID] : [] },
+                embeds: [{
+                  title: '📩 New website message',
+                  color: 0xe3122b,
+                  fields: [
+                    { name: 'Name', value: cut(data.name, 1000), inline: true },
+                    { name: 'Email / WhatsApp', value: cut(data.contact, 1000), inline: true },
+                    { name: 'Subject', value: cut(data.subject, 1000) },
+                    { name: 'Message', value: cut(data.message, 1024) }
+                  ],
+                  footer: { text: 'SKG Creator Studio website' },
+                  timestamp: new Date().toISOString()
+                }]
+              })
+            });
+            if (dres.ok) sent = true;
+          } catch (err) { console.error(err); }
+        }
+
+        // Email
+        try {
+          const res = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(OWNER_EMAIL), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              _subject: 'New website message: ' + (data.subject || data.name),
+              _template: 'table',
+              _captcha: 'false',
+              Name: data.name,
+              'Email / WhatsApp': data.contact,
+              Subject: data.subject,
+              Message: data.message
+            })
+          });
+          if (res.ok) sent = true;
+        } catch (err) { console.error(err); }
+
+        btn.disabled = false;
+        btn.innerHTML = btnHTML;
+        if (sent) {
+          f.reset();
+          note.style.color = '#25d366';
+          note.textContent = 'Thank you! Your message has been sent. We will reply soon.';
+        } else {
+          note.style.color = '#ff6b7a';
+          note.innerHTML = 'Could not send right now. <a href="https://wa.me/' + OWNER_WHATSAPP.replace('+', '') +
+                           '?text=' + encodeURIComponent(waText) + '" target="_blank" rel="noopener" style="text-decoration:underline">Send on WhatsApp instead</a>';
+        }
+      });
+      document.getElementById('newsForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        e.target.querySelector('input').value = '';
+        e.target.querySelector('input').placeholder = 'Thanks for subscribing!';
+      });
+    })();
+  </script>
+
+
+
+</body></html>

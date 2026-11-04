@@ -1,0 +1,7 @@
+# FTP details from InfinityFree: Control Panel > FTP Details
+# (or client area > your account > FTP Details)
+# Account if0_43348705 = skgcreatorstudio.xo.je
+host=ftpupload.net
+user=if0_43348705
+password=
+folder=/htdocs

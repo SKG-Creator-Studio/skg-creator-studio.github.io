@@ -46,7 +46,7 @@ window.SKG_PROJECTS = [
     "image": "",
     "video": "",
     "link": "",
-    "featured": true,
+    "featured": false,
     "mockStyle": "",
     "mock": ""
   },

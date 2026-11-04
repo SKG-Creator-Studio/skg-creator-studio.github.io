@@ -49,5 +49,16 @@ window.SKG_PROJECTS = [
     "featured": true,
     "mockStyle": "",
     "mock": ""
+  },
+  {
+    "title": "dj event post",
+    "category": "Graphic Design",
+    "description": "",
+    "image": "uploads/Woman_in_nightclub_flyer_2K_20261022184639.jpg",
+    "video": "",
+    "link": "",
+    "featured": false,
+    "mockStyle": "",
+    "mock": ""
   }
 ];
